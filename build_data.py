@@ -55,12 +55,14 @@ def read_rows():
             price_raw = row.get("price")
             ppp_raw = row.get("price_per_pyeong")
             area_raw = row.get("area_m2")
-            if not price_raw or not ppp_raw or not area_raw:
+            floor_raw = row.get("floor")
+            if not price_raw or not ppp_raw or not area_raw or not floor_raw:
                 continue
             try:
                 price = int(price_raw)
                 ppp = int(ppp_raw)
                 area = float(area_raw)
+                floor = int(floor_raw)
             except ValueError:
                 continue
             yield {
@@ -69,6 +71,7 @@ def read_rows():
                 "dong": row.get("dong"),
                 "complex": row.get("complex"),
                 "area_m2": area,
+                "floor": floor,
                 "price": price,
                 "ppp": ppp,
             }
@@ -180,44 +183,51 @@ def main():
             window = [monthly[i - 2]["medianPpp"], monthly[i - 1]["medianPpp"], monthly[i]["medianPpp"]]
             entry["ma3"] = round(sum(window) / 3, 2)
 
-    # ---------- complexes (n >= 10) ----------
+    # ---------- complexList (ALL complexes, complex->dong is 1:1) ----------
     complex_rows = defaultdict(list)
     for r in gb_rows:
         complex_rows[(r["complex"], r["dong"])].append(r)
 
-    complexes = []
+    complex_list = []
     for (cx, dong), crows in complex_rows.items():
-        n = len(crows)
-        if n < 10:
-            continue
         ppp_vals = [r["ppp"] for r in crows]
-        price_vals = [r["price"] for r in crows]
-
-        by_area = {}
-        band_rows = defaultdict(list)
-        for r in crows:
-            band_rows[area_band(r["area_m2"])].append(r)
-        for band_key, band_list in band_rows.items():
-            if len(band_list) < 1:
-                continue
-            by_area[band_key] = {
-                "medianPpp": round(median([r["ppp"] for r in band_list])),
-                "n": len(band_list),
-                "medianPrice": round(median([r["price"] for r in band_list])),
-            }
-
-        complexes.append(
+        complex_list.append(
             {
-                "complex": cx,
+                "name": cx,
                 "dong": dong,
+                "n": len(crows),
                 "medianPpp": round(median(ppp_vals)),
-                "n": n,
-                "medianPrice": round(median(price_vals)),
-                "byArea": by_area,
             }
         )
 
-    complexes.sort(key=lambda x: x["medianPpp"], reverse=True)
+    complex_list.sort(key=lambda x: x["n"], reverse=True)
+    complex_index = {c["name"]: i for i, c in enumerate(complex_list)}
+
+    # ---------- months ----------
+    months = months_sorted
+
+    # ---------- kpi price stats ----------
+    all_prices = [r["price"] for r in gb_rows]
+    median_price = round(median(all_prices))
+    min_price = min(all_prices)
+    max_price = max(all_prices)
+
+    # ---------- deals (compact arrays, sorted by price ascending) ----------
+    month_index = {ym: i for i, ym in enumerate(months)}
+    deal_fields = ["c", "m", "area", "floor", "price", "ppp"]
+    deals = []
+    for r in gb_rows:
+        deals.append(
+            [
+                complex_index[r["complex"]],
+                month_index[r["ym"]],
+                round(r["area_m2"], 1),
+                r["floor"],
+                r["price"],
+                r["ppp"],
+            ]
+        )
+    deals.sort(key=lambda d: d[4])
 
     # ---------- areaBands (강북구 only) ----------
     band_ppp = defaultdict(list)
@@ -273,11 +283,17 @@ def main():
             "deals": deals_total,
             "dealsChangePct": deals_change_pct,
             "dongGapRatio": dong_gap_ratio,
+            "medianPrice": median_price,
+            "minPrice": min_price,
+            "maxPrice": max_price,
         },
+        "complexList": complex_list,
+        "months": months,
+        "dealFields": deal_fields,
+        "deals": deals,
         "guRanking": gu_ranking,
         "monthly": monthly,
         "dongs": dongs,
-        "complexes": complexes,
         "areaBands": area_bands,
         "dongAreaBands": dong_area_bands,
     }
@@ -288,9 +304,10 @@ def main():
 
     # Also emit a plain-JS version so the page works under file:// (fetch()
     # is blocked there) as well as on GitHub Pages, via a <script src> tag.
+    # Compact (no indent) so the file stays under the 100KB budget (PRD #8).
     with open(OUT_JS_PATH, "w", encoding="utf-8") as f:
         f.write("window.DASHBOARD_DATA = ")
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
         f.write(";\n")
 
     # ---------- summary ----------
@@ -304,12 +321,15 @@ def main():
     print(f"[kpi] deals = {deals_total}, dealsChangePct = {deals_change_pct}%")
     print(f"[kpi] dongGapRatio = {dong_gap_ratio}")
     print(f"[dongs] {[(d['dong'], d['medianPpp'], d['n'], d['lowSample']) for d in dongs]}")
-    print(f"[complexes] count (n>=10) = {len(complexes)}")
+    print(f"[complexList] count = {len(complex_list)}")
+    print(f"[deals] count = {len(deals)}")
     print(f"[areaBands] {[(b['band'], b['medianPpp'], b['n']) for b in area_bands]}")
     for dong, entries in dong_area_bands.items():
         print(f"[dongAreaBands] {dong}: {[(e['band'], e['medianPpp'], e['n']) for e in entries]}")
     print(f"[monthly] months = {len(monthly)}")
     print(f"JSON file size = {size_kb:.1f} KB")
+    js_size_kb = OUT_JS_PATH.stat().st_size / 1024
+    print(f"JS file size = {js_size_kb:.1f} KB")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>강북구 아파트 매매 대시보드</title>
+<title>강북구 아파트 매매 대시보드 — 내 예산으로 뭘 살 수 있나</title>
 <link rel="stylesheet" href="assets/dashboard.css">
 </head>
 <body>
@@ -14,54 +14,50 @@
 
 <div class="wrap">
 
-  <!-- S0. 히어로 -->
+  <!-- S0. 예산 입력 + 즉답 -->
   <section class="card hero">
     <h1 class="title1 hero-headline" id="hero-headline">불러오는 중…</h1>
     <p class="body1 hero-sub" id="hero-sub"></p>
+
+    <div class="budget-control" id="budget-control">
+      <div class="budget-control-row">
+        <label class="label1" for="budget-range">예산</label>
+        <div class="budget-number-wrap">
+          <input type="number" id="budget-number" class="budget-number" min="10000" max="130000" step="1000" aria-label="예산 직접 입력 (만원 단위)">
+          <span class="caption1 budget-number-unit">만원</span>
+        </div>
+      </div>
+      <input type="range" id="budget-range" min="10000" max="130000" step="1000" value="70000"
+             aria-label="예산 슬라이더" />
+      <div class="budget-range-labels">
+        <span class="caption1">1억</span>
+        <span class="caption1">13억</span>
+      </div>
+    </div>
+
     <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="empty-state" id="hero-empty" style="display:none;"></div>
   </section>
 
-  <!-- S1. 서울 25개 구 안에서의 위치 -->
+  <!-- S1. 가격 분포 + 예산선 -->
   <section class="card">
     <div class="section-header">
-      <h2 class="heading1">서울 25개 구 안에서의 위치</h2>
-      <p class="body1 section-caption">25개 구 중위 평당가 내림차순 · 강북구만 강조</p>
+      <h2 class="heading1">가격 분포 속 내 예산의 위치</h2>
+      <p class="body1 section-caption">강북구 매매가 분포 · 예산 이하 구간 강조</p>
     </div>
-    <div class="chart-scroll" id="gu-ranking-chart" role="group" aria-label="서울 25개 구 중위 평당가 랭킹 차트"></div>
-    <p class="caption1 section-caption" id="gu-ranking-caption"></p>
-  </section>
-
-  <!-- S2. 12개월 추세 -->
-  <section class="card">
-    <div class="section-header">
-      <h2 class="heading1">12개월 추세 — 가격은 정체, 거래는 증가</h2>
-      <p class="body1 section-caption">2025-07 ~ 2026-06 · 월별 거래량(막대) + 3개월 이동 중위 평당가(라인)</p>
-    </div>
-    <div class="chart-scroll" id="monthly-chart"></div>
+    <div class="chart-scroll" id="hist-chart"></div>
     <div class="legend">
-      <span class="legend-item"><span class="legend-swatch bar"></span>월별 거래량(건)</span>
-      <span class="legend-item"><span class="legend-swatch line"></span>3개월 이동 중위 평당가(만원)</span>
+      <span class="legend-item"><span class="legend-swatch primary"></span>예산 이하</span>
+      <span class="legend-item"><span class="legend-swatch bar"></span>예산 초과</span>
     </div>
-    <p class="section-insight body1">
-      가격은 -1.33%로 사실상 제자리인데 거래량은 +56% — 거래는 살아났지만 가격은 따라오지 않은 구간
-    </p>
+    <p class="caption1 section-caption" id="hist-caption"></p>
   </section>
 
-  <!-- S3. 동별 격차 -->
+  <!-- S2. 예산으로 살 수 있는 단지 -->
   <section class="card">
     <div class="section-header">
-      <h2 class="heading1">동별 격차</h2>
-      <p class="body1 section-caption">4개 동 중위 평당가 · 거래 건수 병기</p>
-    </div>
-    <div class="chart-scroll" id="dong-chart"></div>
-    <p class="caption1 section-caption" id="dong-caption"></p>
-  </section>
-
-  <!-- S4. 단지 랭킹 -->
-  <section class="card">
-    <div class="section-header">
-      <h2 class="heading1">단지 랭킹</h2>
-      <p class="body1 section-caption">거래 10건 이상 단지만 표시 · 컬럼 헤더 클릭 시 정렬</p>
+      <h2 class="heading1">예산으로 살 수 있는 단지</h2>
+      <p class="body1 section-caption">예산 이하 실거래가 1건 이상인 단지 전부 · 컬럼 헤더 클릭 시 정렬</p>
     </div>
 
     <div class="filter-bar">
@@ -84,11 +80,47 @@
     <div class="empty-state" id="complex-empty" style="display:none;"></div>
   </section>
 
-  <!-- S5. 면적대별 비교 -->
+  <!-- S3. 서울 25개 구 안에서의 위치 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">서울 25개 구 안에서의 위치</h2>
+      <p class="body1 section-caption">25개 구 중위 평당가 내림차순 · 강북구만 강조 <span class="scope-tag">예산과 무관 · 강북구 전체 기준</span></p>
+    </div>
+    <div class="chart-scroll" id="gu-ranking-chart" role="group" aria-label="서울 25개 구 중위 평당가 랭킹 차트"></div>
+    <p class="caption1 section-caption" id="gu-ranking-caption"></p>
+  </section>
+
+  <!-- S4. 12개월 추세 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">12개월 추세 — 가격은 정체, 거래는 증가</h2>
+      <p class="body1 section-caption">2025-07 ~ 2026-06 · 월별 거래량(막대) + 3개월 이동 중위 평당가(라인) <span class="scope-tag">예산과 무관</span></p>
+    </div>
+    <div class="chart-scroll" id="monthly-chart"></div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch bar"></span>월별 거래량(건)</span>
+      <span class="legend-item"><span class="legend-swatch line"></span>3개월 이동 중위 평당가(만원)</span>
+    </div>
+    <p class="section-insight body1">
+      가격은 -1.33%로 사실상 제자리인데 거래량은 +56% — 거래는 살아났지만 가격은 따라오지 않은 구간
+    </p>
+  </section>
+
+  <!-- S5. 동별 격차 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">동별 격차</h2>
+      <p class="body1 section-caption">4개 동 중위 평당가 · 거래 건수 병기 <span class="scope-tag">예산과 무관</span></p>
+    </div>
+    <div class="chart-scroll" id="dong-chart"></div>
+    <p class="caption1 section-caption" id="dong-caption"></p>
+  </section>
+
+  <!-- S6. 면적대별 비교 -->
   <section class="card">
     <div class="section-header">
       <h2 class="heading1">면적대별 비교</h2>
-      <p class="body1 section-caption">동 필터에 연동 · 소형(~60㎡) / 중형(60~85㎡) / 대형(85㎡~)</p>
+      <p class="body1 section-caption">동 필터에 연동 · 소형(~60㎡) / 중형(60~85㎡) / 대형(85㎡~) <span class="scope-tag">예산과 무관</span></p>
     </div>
     <div class="chart-scroll" id="area-band-chart"></div>
     <p class="caption1 section-caption" id="area-band-caption"></p>

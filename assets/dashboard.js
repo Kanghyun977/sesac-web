@@ -2,6 +2,12 @@
   강북구 아파트 매매 대시보드 — 로직
   데이터: window.DASHBOARD_DATA (data/dashboard.js, build_data.py 산출물)
   차트: 외부 라이브러리 없이 인라인 SVG로 직접 그림.
+
+  핵심 규칙 (PRD 참조):
+  - 예산 매수 가능 여부는 "개별 거래" 기준. 중위값으로 걸러선 안 된다 (§2.1).
+  - S2는 93개 단지 전부가 후보(탐색), 중위 평당가만 n<10 경고 배지(랭킹) — §2.3.
+  - 도시 전체 평균과의 비교 문구는 절대 쓰지 않는다(구성효과로 오도될 수 있음). 상대 위치는 순위(n위/25)로만 (§2.2).
+  - 상승/하락은 화살표(▲/▼) + 부호로만 표기, 색으로 구분하지 않는다 (§5.4).
 */
 (function () {
   "use strict";
@@ -12,10 +18,16 @@
   var DONG_OPTIONS = ["전체", "미아동", "번동", "수유동", "우이동"];
   var AREA_OPTIONS = ["전체", "소형", "중형", "대형"];
 
+  var BUDGET_MIN = 10000;
+  var BUDGET_MAX = 130000;
+  var BUDGET_STEP = 1000;
+  var BUDGET_DEFAULT = 70000;
+
   var state = {
+    budget: BUDGET_DEFAULT,
     dong: "전체",
     area: "전체",
-    sortKey: "medianPpp",
+    sortKey: "dealsAtBudget",
     sortDir: "desc",
   };
 
@@ -31,6 +43,14 @@
     var arrow = n > 0 ? "▲" : n < 0 ? "▼" : "-";
     var sign = n > 0 ? "+" : "";
     return arrow + " " + sign + n.toFixed(d) + "%";
+  }
+
+  // 만원 단위 금액을 "N억" / "N억 M,MMM만원"으로 표기
+  function fmtEok(manwon) {
+    var eok = Math.floor(manwon / 10000);
+    var rem = Math.round(manwon % 10000);
+    if (rem === 0) return eok + "억원";
+    return eok + "억 " + rem.toLocaleString("ko-KR") + "만원";
   }
 
   function el(tag, attrs, children) {
@@ -59,41 +79,221 @@
     return e;
   }
 
+  function median(arr) {
+    if (!arr.length) return null;
+    var sorted = arr.slice().sort(function (a, b) {
+      return a - b;
+    });
+    var mid = Math.floor(sorted.length / 2);
+    if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2;
+    return sorted[mid];
+  }
+
+  // ---------- deal decoding ----------
+  // dealFields: ["c","m","area","floor","price","ppp"]
+  var F_C = 0,
+    F_M = 1,
+    F_AREA = 2,
+    F_FLOOR = 3,
+    F_PRICE = 4,
+    F_PPP = 5;
+
+  function dongOfComplex(c) {
+    return DATA.complexList[c].dong;
+  }
+
+  function areaBandOf(area) {
+    if (area <= 60) return "소형";
+    if (area <= 85) return "중형";
+    return "대형";
+  }
+
+  // 동/면적대 필터만 적용한 거래 목록 (예산과 무관, S1·S2·S0의 "전체 후보" 계산에 사용)
+  function getScopedDeals() {
+    var dong = state.dong;
+    var area = state.area;
+    if (dong === "전체" && area === "전체") return DATA.deals;
+    return DATA.deals.filter(function (d) {
+      if (dong !== "전체" && dongOfComplex(d[F_C]) !== dong) return false;
+      if (area !== "전체" && areaBandOf(d[F_AREA]) !== area) return false;
+      return true;
+    });
+  }
+
+  function uniqueComplexes(deals) {
+    var s = {};
+    deals.forEach(function (d) {
+      s[d[F_C]] = true;
+    });
+    return Object.keys(s).map(Number);
+  }
+
   // =====================================================================
-  // S0 — Hero + KPI
+  // S0 — 예산 입력 + 즉답
   // =====================================================================
+  function budgetValueText(v) {
+    return fmtEok(v);
+  }
+
+  function initBudgetControl() {
+    var range = document.getElementById("budget-range");
+    var num = document.getElementById("budget-number");
+
+    range.min = BUDGET_MIN;
+    range.max = BUDGET_MAX;
+    range.step = BUDGET_STEP;
+    range.value = state.budget;
+    range.setAttribute("aria-valuetext", budgetValueText(state.budget));
+
+    num.min = BUDGET_MIN;
+    num.max = BUDGET_MAX;
+    num.step = BUDGET_STEP;
+    num.value = state.budget;
+
+    var initialPct = ((state.budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+    range.style.background =
+      "linear-gradient(to right, var(--primary-normal) 0%, var(--primary-normal) " +
+      initialPct +
+      "%, var(--fill-normal) " +
+      initialPct +
+      "%, var(--fill-normal) 100%)";
+
+    function updateTrackFill(v) {
+      var pct = ((v - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+      range.style.background =
+        "linear-gradient(to right, var(--primary-normal) 0%, var(--primary-normal) " +
+        pct +
+        "%, var(--fill-normal) " +
+        pct +
+        "%, var(--fill-normal) 100%)";
+    }
+
+    function apply(v) {
+      v = Math.round(v / BUDGET_STEP) * BUDGET_STEP;
+      if (v < BUDGET_MIN) v = BUDGET_MIN;
+      if (v > BUDGET_MAX) v = BUDGET_MAX;
+      state.budget = v;
+      range.value = v;
+      num.value = v;
+      range.setAttribute("aria-valuetext", budgetValueText(v));
+      updateTrackFill(v);
+      renderBudgetDependent();
+    }
+
+    range.addEventListener("input", function () {
+      apply(Number(range.value));
+    });
+    num.addEventListener("input", function () {
+      var v = Number(num.value);
+      if (isNaN(v)) return;
+      apply(v);
+    });
+    num.addEventListener("blur", function () {
+      apply(Number(num.value) || state.budget);
+    });
+  }
+
   function renderHero() {
-    var kpi = DATA.kpi;
-    var meta = DATA.meta;
+    var scoped = getScopedDeals();
+    var inBudget = scoped.filter(function (d) {
+      return d[F_PRICE] <= state.budget;
+    });
+
+    var heroEmpty = document.getElementById("hero-empty");
+    var kpiGrid = document.getElementById("kpi-grid");
+
+    var scopeLabel =
+      (state.dong !== "전체" ? state.dong : "강북구") +
+      (state.area !== "전체" ? " · " + state.area : "");
+
+    if (scoped.length === 0) {
+      document.getElementById("hero-headline").textContent = "선택한 조건에 해당하는 거래가 없습니다";
+      document.getElementById("hero-sub").textContent = scopeLabel + " · 동/면적대 필터를 조정해보세요";
+      kpiGrid.style.display = "none";
+      heroEmpty.style.display = "block";
+      heroEmpty.textContent = "해당 조건(" + scopeLabel + ")의 거래 데이터가 없습니다.";
+      return;
+    }
+
+    if (inBudget.length === 0) {
+      var minInScope = Math.min.apply(
+        null,
+        scoped.map(function (d) {
+          return d[F_PRICE];
+        })
+      );
+      document.getElementById("hero-headline").textContent =
+        fmtEok(state.budget) + "으로는 " + scopeLabel + "에서 살 수 있는 단지가 없습니다";
+      document.getElementById("hero-sub").textContent =
+        scopeLabel + " 최저 거래가는 " + fmtInt(minInScope) + "만원입니다. 예산을 올려보세요.";
+      kpiGrid.style.display = "none";
+      heroEmpty.style.display = "block";
+      heroEmpty.textContent =
+        "예산 이하 거래가 0건입니다 (" + scopeLabel + " 최저 거래가 " + fmtInt(minInScope) + "만원).";
+      return;
+    }
+
+    heroEmpty.style.display = "none";
+    kpiGrid.style.display = "";
+
+    var complexesScoped = uniqueComplexes(scoped);
+    var complexesBudget = uniqueComplexes(inBudget);
+    var pct = (inBudget.length / scoped.length) * 100;
 
     document.getElementById("hero-headline").textContent =
-      DATA.meta.gu + "는 서울에서 " + kpi.pppRank + "번째로 싼 구입니다";
+      fmtEok(state.budget) +
+      "이면 " +
+      scopeLabel +
+      " 아파트 거래의 " +
+      pct.toFixed(1) +
+      "%, " +
+      complexesBudget.length +
+      "개 단지에 닿습니다";
     document.getElementById("hero-sub").textContent =
-      meta.period + " · 매매 " + fmtInt(meta.total) + "건 · " + meta.generatedFrom + " 기반 집계";
+      DATA.meta.period + " · " + scopeLabel + " 매매 " + fmtInt(scoped.length) + "건 기준";
 
-    var kpiGrid = document.getElementById("kpi-grid");
+    var maxArea = Math.max.apply(
+      null,
+      inBudget.map(function (d) {
+        return d[F_AREA];
+      })
+    );
+
+    var countByComplex = {};
+    inBudget.forEach(function (d) {
+      countByComplex[d[F_C]] = (countByComplex[d[F_C]] || 0) + 1;
+    });
+    var topComplexIdx = null;
+    var topCount = -1;
+    Object.keys(countByComplex).forEach(function (k) {
+      if (countByComplex[k] > topCount) {
+        topCount = countByComplex[k];
+        topComplexIdx = Number(k);
+      }
+    });
+    var topComplexName = topComplexIdx !== null ? DATA.complexList[topComplexIdx].name : "-";
+
     kpiGrid.innerHTML = "";
-
     var cards = [
       {
-        label: "중위 평당가",
-        value: fmtInt(kpi.medianPpp) + "만원/평",
-        sub: kpi.pppRank + "위 / " + kpi.pppTotal,
+        label: "매수 가능 단지",
+        value: fmtInt(complexesBudget.length) + "개",
+        sub: "/ " + fmtInt(complexesScoped.length) + "개 단지",
       },
       {
-        label: "반기 변화율",
-        value: fmtSigned(kpi.changePct, 2),
-        sub: kpi.changeRank + "위 / " + kpi.pppTotal,
+        label: "예산 이하 거래",
+        value: fmtInt(inBudget.length) + "건",
+        sub: pct.toFixed(1) + "%",
       },
       {
-        label: "거래량",
-        value: fmtInt(kpi.deals) + "건",
-        sub: "하반기 " + fmtSigned(kpi.dealsChangePct, 1),
+        label: "예산 내 최대 면적",
+        value: fmtInt(maxArea) + "㎡",
+        sub: "전용면적 기준",
       },
       {
-        label: "동별 격차",
-        value: kpi.dongGapRatio + "배",
-        sub: "미아동 ↔ 우이동",
+        label: "선택지가 가장 많은 단지",
+        value: topComplexName,
+        sub: fmtInt(topCount) + "건",
       },
     ];
 
@@ -109,7 +309,324 @@
   }
 
   // =====================================================================
-  // S1 — 서울 25개 구 랭킹 (가로 막대)
+  // S1 — 가격 분포 히스토그램 + 예산선
+  // =====================================================================
+  function renderHistogram() {
+    var scoped = getScopedDeals();
+    var container = document.getElementById("hist-chart");
+    var caption = document.getElementById("hist-caption");
+    container.innerHTML = "";
+
+    if (scoped.length === 0) {
+      container.appendChild(el("div", { class: "empty-state", text: "해당 조건의 거래 데이터가 없습니다." }));
+      caption.textContent = "";
+      return;
+    }
+
+    var prices = scoped.map(function (d) {
+      return d[F_PRICE];
+    });
+    var minP = Math.min.apply(null, prices);
+    var maxP = Math.max.apply(null, prices);
+    var numBins = 16;
+    var span = Math.max(1, maxP - minP);
+    var binW = span / numBins;
+
+    var bins = [];
+    for (var i = 0; i < numBins; i++) {
+      bins.push({ start: minP + i * binW, end: minP + (i + 1) * binW, below: 0, above: 0 });
+    }
+    prices.forEach(function (p) {
+      var idx = Math.min(numBins - 1, Math.floor((p - minP) / binW));
+      if (p <= state.budget) bins[idx].below++;
+      else bins[idx].above++;
+    });
+
+    var chartW = 640;
+    var chartH = 220;
+    var padL = 44;
+    var padR = 16;
+    var padT = 16;
+    var padB = 30;
+    var plotW = chartW - padL - padR;
+    var plotH = chartH - padT - padB;
+    var slot = plotW / numBins;
+    var barW = slot * 0.82;
+    var maxCount = Math.max.apply(
+      null,
+      bins.map(function (b) {
+        return b.below + b.above;
+      })
+    );
+
+    function xAt(i) {
+      return padL + i * slot + (slot - barW) / 2;
+    }
+    function hAt(count) {
+      return maxCount ? (count / maxCount) * plotH : 0;
+    }
+
+    var budgetInRange = state.budget >= minP;
+    var budgetX = padL + Math.min(1, Math.max(0, (state.budget - minP) / span)) * plotW;
+
+    var pct = (scoped.filter(function (d) { return d[F_PRICE] <= state.budget; }).length / scoped.length) * 100;
+
+    var svg = svgEl("svg", {
+      class: "chart",
+      viewBox: "0 0 " + chartW + " " + chartH,
+      role: "img",
+      "aria-label":
+        "강북구 매매가 분포 히스토그램. 최저 " +
+        fmtInt(minP) +
+        "만원부터 최고 " +
+        fmtInt(maxP) +
+        "만원까지 분포하며, 예산 " +
+        fmtInt(state.budget) +
+        "만원은 하위 " +
+        pct.toFixed(1) +
+        "% 지점에 위치합니다.",
+    });
+
+    bins.forEach(function (b, i) {
+      var x = xAt(i);
+      var total = b.below + b.above;
+      var totalH = hAt(total);
+      var belowH = maxCount ? (b.below / maxCount) * plotH : 0;
+      var aboveH = totalH - belowH;
+      var yBase = padT + plotH;
+
+      if (b.below > 0) {
+        svg.appendChild(
+          svgEl("rect", {
+            x: x,
+            y: yBase - belowH,
+            width: barW,
+            height: belowH,
+            rx: 2,
+            class: "chart-bar-primary",
+          })
+        );
+      }
+      if (b.above > 0) {
+        svg.appendChild(
+          svgEl("rect", {
+            x: x,
+            y: yBase - totalH,
+            width: barW,
+            height: aboveH,
+            rx: 2,
+            class: "chart-bar-neutral",
+          })
+        );
+      }
+    });
+
+    // x axis labels (min / max)
+    var lblMin = svgEl("text", { x: padL, y: chartH - 8, class: "chart-axis-text" });
+    lblMin.textContent = fmtInt(minP) + "만원";
+    svg.appendChild(lblMin);
+    var lblMax = svgEl("text", { x: chartW - padR, y: chartH - 8, "text-anchor": "end", class: "chart-axis-text" });
+    lblMax.textContent = fmtInt(maxP) + "만원";
+    svg.appendChild(lblMax);
+
+    // budget marker line
+    if (budgetInRange) {
+      svg.appendChild(
+        svgEl("line", {
+          x1: budgetX,
+          x2: budgetX,
+          y1: padT,
+          y2: padT + plotH,
+          class: "budget-marker-line",
+        })
+      );
+      var markerLabel = svgEl("text", {
+        x: budgetX,
+        y: padT - 4,
+        "text-anchor": budgetX > chartW - 60 ? "end" : "middle",
+        class: "chart-value-text budget-marker-text",
+      });
+      markerLabel.textContent = "내 예산 " + fmtEok(state.budget);
+      svg.appendChild(markerLabel);
+    }
+
+    container.appendChild(svg);
+
+    caption.textContent = "내 예산은 강북구 거래의 하위 " + pct.toFixed(1) + "% 지점입니다";
+  }
+
+  // =====================================================================
+  // S2 — 예산으로 살 수 있는 단지 (핵심 결과 테이블)
+  // =====================================================================
+  function getComplexRows() {
+    var scoped = getScopedDeals();
+    var byComplex = {};
+    scoped.forEach(function (d) {
+      var c = d[F_C];
+      if (!byComplex[c]) byComplex[c] = [];
+      byComplex[c].push(d);
+    });
+
+    var rows = [];
+    Object.keys(byComplex).forEach(function (k) {
+      var c = Number(k);
+      var deals = byComplex[k];
+      var atBudget = deals.filter(function (d) {
+        return d[F_PRICE] <= state.budget;
+      });
+      if (atBudget.length === 0) return; // §3 S2: 예산 이하 거래가 1건 이상인 단지만
+
+      var prices = deals.map(function (d) {
+        return d[F_PRICE];
+      });
+      var ppps = deals.map(function (d) {
+        return d[F_PPP];
+      });
+      var areas = deals.map(function (d) {
+        return d[F_AREA];
+      });
+
+      rows.push({
+        complex: DATA.complexList[c].name,
+        dong: DATA.complexList[c].dong,
+        minPrice: Math.min.apply(null, prices),
+        dealsAtBudget: atBudget.length,
+        dealsTotal: deals.length,
+        medianPpp: median(ppps),
+        lowSample: deals.length < 10,
+        repArea: median(areas),
+      });
+    });
+    return rows;
+  }
+
+  function sortRows(rows) {
+    var key = state.sortKey;
+    var dir = state.sortDir === "asc" ? 1 : -1;
+    return rows.slice().sort(function (a, b) {
+      var av = a[key];
+      var bv = b[key];
+      if (typeof av === "string") return av.localeCompare(bv) * dir;
+      return (av - bv) * dir;
+    });
+  }
+
+  var COLUMNS = [
+    { key: "rank", label: "순위", sortable: false },
+    { key: "complex", label: "단지명", sortable: true },
+    { key: "dong", label: "동", sortable: true },
+    { key: "minPrice", label: "최저가", sortable: true },
+    { key: "dealsAtBudget", label: "예산 이하 거래수/전체", sortable: true },
+    { key: "medianPpp", label: "중위 평당가", sortable: true },
+    { key: "repArea", label: "대표 면적", sortable: true },
+  ];
+
+  function renderComplexTable() {
+    var rows = sortRows(getComplexRows());
+    var thead = document.getElementById("complex-thead");
+    var tbody = document.getElementById("complex-tbody");
+    var emptyState = document.getElementById("complex-empty");
+    var tableEl = document.getElementById("complex-table");
+
+    thead.innerHTML = "";
+    var trHead = el("tr");
+    COLUMNS.forEach(function (col) {
+      var th = el("th", { scope: "col" });
+      if (col.sortable) {
+        var isActive = state.sortKey === col.key;
+        var arrow = isActive ? (state.sortDir === "asc" ? " ▲" : " ▼") : "";
+        var btn = el("button", {
+          type: "button",
+          "aria-label": col.label + " 기준 정렬",
+        });
+        btn.textContent = col.label + arrow;
+        btn.addEventListener("click", function () {
+          if (state.sortKey === col.key) {
+            state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+          } else {
+            state.sortKey = col.key;
+            state.sortDir = "desc";
+          }
+          renderComplexTable();
+        });
+        th.appendChild(btn);
+      } else {
+        th.textContent = col.label;
+      }
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+
+    tbody.innerHTML = "";
+
+    if (rows.length === 0) {
+      tableEl.style.display = "none";
+      emptyState.style.display = "block";
+
+      var scoped = getScopedDeals();
+      if (scoped.length === 0) {
+        emptyState.textContent =
+          "선택한 조건(" + state.dong + " · " + state.area + ")에 해당하는 거래 데이터가 없습니다.";
+      } else {
+        var minInScope = Math.min.apply(
+          null,
+          scoped.map(function (d) {
+            return d[F_PRICE];
+          })
+        );
+        emptyState.textContent =
+          "예산 " +
+          fmtEok(state.budget) +
+          "으로 매수 가능한 단지가 없습니다. 선택한 조건의 최저 거래가는 " +
+          fmtInt(minInScope) +
+          "만원입니다.";
+      }
+      return;
+    }
+
+    tableEl.style.display = "";
+    emptyState.style.display = "none";
+
+    rows.forEach(function (r, i) {
+      var rank = i + 1;
+      var tr = el("tr");
+
+      var rankTd = el("td");
+      var chip = el("span", {
+        class: "rank-chip" + (rank <= 3 ? " top" : ""),
+        text: String(rank),
+      });
+      rankTd.appendChild(chip);
+      tr.appendChild(rankTd);
+
+      tr.appendChild(el("td", { text: r.complex }));
+      tr.appendChild(el("td", { text: r.dong }));
+
+      var minPriceTd = el("td", { class: "price-cell" });
+      minPriceTd.appendChild(document.createTextNode(fmtInt(r.minPrice) + " "));
+      minPriceTd.appendChild(el("span", { class: "price-unit", text: "만원" }));
+      tr.appendChild(minPriceTd);
+
+      tr.appendChild(el("td", { text: fmtInt(r.dealsAtBudget) + " / " + fmtInt(r.dealsTotal) + "건" }));
+
+      var pppTd = el("td", { class: "price-cell" });
+      pppTd.appendChild(document.createTextNode(fmtInt(r.medianPpp) + " "));
+      pppTd.appendChild(el("span", { class: "price-unit", text: "만원/평" }));
+      if (r.lowSample) {
+        pppTd.appendChild(
+          el("span", { class: "low-sample-badge", text: "⚠ n=" + r.dealsTotal, title: "표본 10건 미만 — 대표값 신뢰도 낮음" })
+        );
+      }
+      tr.appendChild(pppTd);
+
+      tr.appendChild(el("td", { text: fmtInt(r.repArea) + "㎡" }));
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  // =====================================================================
+  // S3 — 서울 25개 구 랭킹 (가로 막대) — 예산과 무관
   // =====================================================================
   function renderGuRanking() {
     var ranking = DATA.guRanking; // already sorted desc by medianPpp
@@ -150,7 +667,7 @@
         x: leftLabelW - 8,
         y: y + rowH / 2 + 4,
         "text-anchor": "end",
-        class: "chart-axis-text" + (isGB ? "" : ""),
+        class: "chart-axis-text",
       });
       label.textContent = g.gu;
       if (isGB) label.setAttribute("font-weight", "700");
@@ -180,11 +697,20 @@
     var top = ranking[0];
     var pctOfTop = Math.round((DATA.kpi.medianPpp / top.medianPpp) * 100);
     document.getElementById("gu-ranking-caption").textContent =
-      "1위 " + top.gu + "(" + fmtInt(top.medianPpp) + "만원/평) 대비 강북구는 " + pctOfTop + "% 수준";
+      "1위 " +
+      top.gu +
+      "(" +
+      fmtInt(top.medianPpp) +
+      "만원/평) 대비 강북구는 " +
+      pctOfTop +
+      "% 수준 · " +
+      DATA.kpi.pppRank +
+      "위 / " +
+      DATA.kpi.pppTotal;
   }
 
   // =====================================================================
-  // S2 — 12개월 추세 (거래량 막대 + ma3 라인, 이중 축)
+  // S4 — 12개월 추세 (거래량 막대 + ma3 라인, 이중 축) — 예산과 무관
   // =====================================================================
   function renderMonthlyTrend() {
     var monthly = DATA.monthly;
@@ -318,7 +844,7 @@
   }
 
   // =====================================================================
-  // S3 — 동별 격차 (세로 막대 + 표본 배지)
+  // S5 — 동별 격차 (세로 막대 + 표본 배지) — 예산과 무관
   // =====================================================================
   function renderDongChart() {
     var dongs = DATA.dongs;
@@ -412,138 +938,7 @@
   }
 
   // =====================================================================
-  // S4 — 단지 랭킹 테이블
-  // =====================================================================
-  function getFilteredComplexRows() {
-    var rows = [];
-    DATA.complexes.forEach(function (c) {
-      if (state.dong !== "전체" && c.dong !== state.dong) return;
-
-      if (state.area === "전체") {
-        rows.push({
-          complex: c.complex,
-          dong: c.dong,
-          medianPpp: c.medianPpp,
-          n: c.n,
-          medianPrice: c.medianPrice,
-        });
-      } else {
-        var band = c.byArea && c.byArea[state.area];
-        if (!band || band.n < 10) return; // §2.2 small-sample rule survives filtering
-        rows.push({
-          complex: c.complex,
-          dong: c.dong,
-          medianPpp: band.medianPpp,
-          n: band.n,
-          medianPrice: band.medianPrice,
-        });
-      }
-    });
-    return rows;
-  }
-
-  function sortRows(rows) {
-    var key = state.sortKey;
-    var dir = state.sortDir === "asc" ? 1 : -1;
-    return rows.slice().sort(function (a, b) {
-      var av = a[key];
-      var bv = b[key];
-      if (typeof av === "string") return av.localeCompare(bv) * dir;
-      return (av - bv) * dir;
-    });
-  }
-
-  var COLUMNS = [
-    { key: "rank", label: "순위", sortable: false },
-    { key: "complex", label: "단지명", sortable: true },
-    { key: "dong", label: "동", sortable: true },
-    { key: "medianPpp", label: "중위 평당가", sortable: true },
-    { key: "n", label: "거래 건수", sortable: true },
-    { key: "medianPrice", label: "중위 거래가", sortable: true },
-  ];
-
-  function renderComplexTable() {
-    var rows = sortRows(getFilteredComplexRows());
-    var thead = document.getElementById("complex-thead");
-    var tbody = document.getElementById("complex-tbody");
-    var emptyState = document.getElementById("complex-empty");
-    var tableEl = document.getElementById("complex-table");
-
-    thead.innerHTML = "";
-    var trHead = el("tr");
-    COLUMNS.forEach(function (col) {
-      var th = el("th", { scope: "col" });
-      if (col.sortable) {
-        var isActive = state.sortKey === col.key;
-        var arrow = isActive ? (state.sortDir === "asc" ? " ▲" : " ▼") : "";
-        var btn = el("button", {
-          type: "button",
-          "aria-label": col.label + " 기준 정렬",
-        });
-        btn.textContent = col.label + arrow;
-        btn.addEventListener("click", function () {
-          if (state.sortKey === col.key) {
-            state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
-          } else {
-            state.sortKey = col.key;
-            state.sortDir = "desc";
-          }
-          renderComplexTable();
-        });
-        th.appendChild(btn);
-      } else {
-        th.textContent = col.label;
-      }
-      trHead.appendChild(th);
-    });
-    thead.appendChild(trHead);
-
-    tbody.innerHTML = "";
-
-    if (rows.length === 0) {
-      tableEl.style.display = "none";
-      emptyState.style.display = "block";
-      emptyState.textContent =
-        "선택한 조건(" + state.dong + " · " + state.area + ")에 해당하는 단지가 없습니다 (거래 10건 이상 기준).";
-      return;
-    }
-
-    tableEl.style.display = "";
-    emptyState.style.display = "none";
-
-    rows.forEach(function (r, i) {
-      var rank = i + 1;
-      var tr = el("tr");
-
-      var rankTd = el("td");
-      var chip = el("span", {
-        class: "rank-chip" + (rank <= 3 ? " top" : ""),
-        text: String(rank),
-      });
-      rankTd.appendChild(chip);
-      tr.appendChild(rankTd);
-
-      tr.appendChild(el("td", { text: r.complex }));
-      tr.appendChild(el("td", { text: r.dong }));
-
-      var pppTd = el("td", { class: "price-cell" });
-      pppTd.appendChild(document.createTextNode(fmtInt(r.medianPpp) + " "));
-      pppTd.appendChild(el("span", { class: "price-unit", text: "만원/평" }));
-      tr.appendChild(pppTd);
-
-      tr.appendChild(el("td", { text: fmtInt(r.n) + "건" }));
-
-      var priceTd = el("td", { class: "price-cell" });
-      priceTd.appendChild(document.createTextNode(fmtInt(r.medianPrice) + " "));
-      priceTd.appendChild(el("span", { class: "price-unit", text: "만원" }));
-      tr.appendChild(priceTd);
-
-      tbody.appendChild(tr);
-    });
-  }
-
-  // =====================================================================
-  // S5 — 면적대별 비교
+  // S6 — 면적대별 비교 (동 필터에 연동, 예산과 무관)
   // =====================================================================
   function computeAreaBandsForDong(dong) {
     if (dong === "전체") return DATA.areaBands;
@@ -699,8 +1094,8 @@
       btn.addEventListener("click", function () {
         state.dong = opt;
         renderFilters();
-        renderComplexTable();
-        renderAreaBandChart();
+        renderBudgetDependent();
+        renderAreaBandChart(); // S6: 동 필터에 연동
       });
       dongGroup.appendChild(btn);
     });
@@ -715,10 +1110,17 @@
       btn.addEventListener("click", function () {
         state.area = opt;
         renderFilters();
-        renderComplexTable();
+        renderBudgetDependent();
       });
       areaGroup.appendChild(btn);
     });
+  }
+
+  // 예산·동·면적대 중 하나라도 바뀌면 S0·S1·S2를 갱신
+  function renderBudgetDependent() {
+    renderHero();
+    renderHistogram();
+    renderComplexTable();
   }
 
   // =====================================================================
@@ -730,12 +1132,12 @@
         '<p style="padding:40px;text-align:center;color:#999;">데이터를 불러오지 못했습니다 (data/dashboard.js 확인 필요).</p>';
       return;
     }
-    renderHero();
+    initBudgetControl();
+    renderFilters();
+    renderBudgetDependent();
     renderGuRanking();
     renderMonthlyTrend();
     renderDongChart();
-    renderFilters();
-    renderComplexTable();
     renderAreaBandChart();
   }
 
