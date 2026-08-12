@@ -3,345 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>임정 소개</title>
-<style>
-  /*
-    Wanted Montage(https://github.com/wanteddev/montage-web) 디자인 토큰을
-    순수 CSS 변수로 옮겨온 값입니다. (semantic/light theme, typography, spacing)
-  */
-  :root {
-    --primary-normal: #0066FF;
-    --primary-strong: #005EEB;
-    --primary-heavy: #0054D1;
-
-    --label-normal: #171719;
-    --label-strong: #000000;
-    --label-neutral: rgba(46, 47, 51, 0.88);
-    --label-alternative: rgba(55, 56, 60, 0.61);
-    --label-assistive: rgba(55, 56, 60, 0.28);
-
-    --bg-normal: #ffffff;
-    --bg-alternative: #F7F7F8;
-
-    --line-solid-normal: #E1E2E4;
-    --line-solid-neutral: #EAEBEC;
-    --line-normal-normal: rgba(112, 115, 124, 0.22);
-    --fill-normal: rgba(112, 115, 124, 0.08);
-
-    --status-positive: #00BF40;
-    --status-cautionary: #FF9200;
-    --status-negative: #FF4242;
-
-    --primary-bg-weak: rgba(0, 102, 255, 0.08);
-
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-
-    --shadow-small: 0px 2px 4px -2px rgba(15, 15, 16, 0.06), 0px 4px 6px -1px rgba(15, 15, 16, 0.06);
-    --shadow-medium: 0px 4px 6px -2px rgba(15, 15, 16, 0.07), 0px 10px 15px -3px rgba(15, 15, 16, 0.07);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --primary-normal: #3385FF;
-      --primary-strong: #1A75FF;
-      --primary-heavy: #0066FF;
-
-      --label-normal: #F7F7F8;
-      --label-strong: #ffffff;
-      --label-neutral: rgba(194, 196, 200, 0.88);
-      --label-alternative: rgba(174, 176, 182, 0.61);
-      --label-assistive: rgba(174, 176, 182, 0.28);
-
-      --bg-normal: #1B1C1E;
-      --bg-alternative: #0F0F10;
-
-      --line-solid-normal: #37383C;
-      --line-solid-neutral: #333438;
-      --line-normal-normal: rgba(135, 138, 147, 0.28);
-      --fill-normal: rgba(135, 138, 147, 0.22);
-
-      --primary-bg-weak: rgba(51, 133, 255, 0.12);
-      --shadow-small: 0px 2px 4px -2px rgba(0, 0, 0, 0.4), 0px 4px 6px -1px rgba(0, 0, 0, 0.4);
-      --shadow-medium: 0px 4px 6px -2px rgba(0, 0, 0, 0.45), 0px 10px 15px -3px rgba(0, 0, 0, 0.45);
-    }
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
-      "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 56px 20px 80px;
-    background-color: var(--bg-alternative);
-    color: var(--label-normal);
-  }
-
-  /* Montage typography scale */
-  .title1 {
-    font-size: 2rem;
-    line-height: 2.75rem;
-    letter-spacing: -0.0253em;
-    font-weight: 700;
-    margin: 0;
-  }
-  .heading1 {
-    font-size: 1.375rem;
-    line-height: 1.875rem;
-    letter-spacing: -0.0194em;
-    font-weight: 700;
-    margin: 0;
-  }
-  .body1 {
-    font-size: 1rem;
-    line-height: 1.625rem;
-    letter-spacing: 0.0057em;
-    font-weight: 400;
-    margin: 0;
-  }
-  .label1 {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    letter-spacing: 0.0145em;
-    font-weight: 500;
-  }
-  .caption1 {
-    font-size: 0.75rem;
-    line-height: 1rem;
-    letter-spacing: 0.0252em;
-    font-weight: 500;
-  }
-
-  .card {
-    background-color: var(--bg-normal);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-small);
-    padding: 32px;
-  }
-
-  section + section {
-    margin-top: 32px;
-  }
-
-  .profile-name {
-    color: var(--label-strong);
-  }
-
-  .profile-desc {
-    margin-top: 12px;
-    color: var(--label-neutral);
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background-color: var(--primary-bg-weak);
-    color: var(--primary-normal);
-    font-weight: 600;
-    width: fit-content;
-    margin-bottom: 16px;
-  }
-
-  .info-grid {
-    margin-top: 24px;
-    border-top: 1px solid var(--line-solid-normal);
-  }
-
-  .info-row {
-    display: flex;
-    gap: 16px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--line-solid-normal);
-  }
-
-  .info-row dt {
-    flex: 0 0 96px;
-    color: var(--label-alternative);
-    font-weight: 500;
-  }
-
-  .info-row dd {
-    margin: 0;
-    color: var(--label-normal);
-  }
-
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin: 24px 0 28px;
-  }
-
-  .stat-card {
-    background-color: var(--bg-alternative);
-    border-radius: var(--radius-md);
-    padding: 16px;
-  }
-
-  .stat-card .caption1 {
-    color: var(--label-alternative);
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .stat-card .stat-value {
-    font-size: 1.5rem;
-    line-height: 2rem;
-    letter-spacing: -0.023em;
-    font-weight: 700;
-    color: var(--primary-normal);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-  }
-
-  thead th {
-    background-color: var(--bg-alternative);
-    color: var(--label-alternative);
-    text-align: left;
-    padding: 12px 12px;
-    font-size: 0.75rem;
-    letter-spacing: 0.0252em;
-    font-weight: 600;
-    border-bottom: 1px solid var(--line-solid-normal);
-  }
-
-  tbody td {
-    padding: 14px 12px;
-    border-bottom: 1px solid var(--line-solid-neutral);
-    font-size: 0.9375rem;
-    line-height: 1.375rem;
-    color: var(--label-normal);
-  }
-
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  .rank-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    background-color: var(--fill-normal);
-    color: var(--label-alternative);
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
-
-  .rank-chip.top {
-    background-color: var(--primary-normal);
-    color: #ffffff;
-  }
-
-  .price-cell {
-    font-weight: 600;
-    color: var(--label-normal);
-  }
-
-  .price-unit {
-    color: var(--label-alternative);
-    font-weight: 400;
-    font-size: 0.8125rem;
-  }
-</style>
+<title>강북구 아파트 매매 대시보드</title>
+<link rel="stylesheet" href="assets/dashboard.css">
 </head>
 <body>
 
-<section class="card">
-  <span class="badge caption1">PROFILE</span>
-  <h1 class="title1 profile-name">임정</h1>
-  <p class="body1 profile-desc">
-    안녕하세요, 임정입니다.<br>
-    새로운 기술을 배우고 직접 만들어보는 것을 좋아합니다.<br>
-    꾸준히 성장하는 개발자가 되는 것이 목표입니다.
-  </p>
+<nav class="top-nav">
+  <a href="profile.html">임정 프로필 보기 →</a>
+</nav>
 
-  <dl class="info-grid">
-    <div class="info-row">
-      <dt class="label1">좋아하는 것</dt>
-      <dd class="body1">새로운 것을 배우고 만들어보는 것</dd>
-    </div>
-    <div class="info-row">
-      <dt class="label1">요즘 배우는 것</dt>
-      <dd class="body1">웹 개발 기초 (HTML, CSS, JavaScript)</dd>
-    </div>
-    <div class="info-row">
-      <dt class="label1">오늘 목표</dt>
-      <dd class="body1">나만의 소개 페이지 완성하기</dd>
-    </div>
-  </dl>
-</section>
+<div class="wrap">
 
-<section class="card">
-  <h2 class="heading1">강북구 아파트 실거래 살펴보기</h2>
+  <!-- S0. 히어로 -->
+  <section class="card hero">
+    <h1 class="title1 hero-headline" id="hero-headline">불러오는 중…</h1>
+    <p class="body1 hero-sub" id="hero-sub"></p>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </section>
 
-  <div class="stat-grid">
-    <div class="stat-card">
-      <span class="caption1">거래 건수</span>
-      <span class="stat-value">1,490건</span>
+  <!-- S1. 서울 25개 구 안에서의 위치 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">서울 25개 구 안에서의 위치</h2>
+      <p class="body1 section-caption">25개 구 중위 평당가 내림차순 · 강북구만 강조</p>
     </div>
-    <div class="stat-card">
-      <span class="caption1">평균 물건금액</span>
-      <span class="stat-value">6.9억</span>
+    <div class="chart-scroll" id="gu-ranking-chart" role="group" aria-label="서울 25개 구 중위 평당가 랭킹 차트"></div>
+    <p class="caption1 section-caption" id="gu-ranking-caption"></p>
+  </section>
+
+  <!-- S2. 12개월 추세 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">12개월 추세 — 가격은 정체, 거래는 증가</h2>
+      <p class="body1 section-caption">2025-07 ~ 2026-06 · 월별 거래량(막대) + 3개월 이동 중위 평당가(라인)</p>
     </div>
-  </div>
+    <div class="chart-scroll" id="monthly-chart"></div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch bar"></span>월별 거래량(건)</span>
+      <span class="legend-item"><span class="legend-swatch line"></span>3개월 이동 중위 평당가(만원)</span>
+    </div>
+    <p class="section-insight body1">
+      가격은 -1.33%로 사실상 제자리인데 거래량은 +56% — 거래는 살아났지만 가격은 따라오지 않은 구간
+    </p>
+  </section>
 
-  <table>
-    <thead>
-      <tr>
-        <th>순위</th>
-        <th>건물명</th>
-        <th>물건금액</th>
-        <th>계약일</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="rank-chip top">1</span></td>
-        <td>송천센트레빌(미아동)</td>
-        <td class="price-cell">127,000 <span class="price-unit">만원</span></td>
-        <td>2026-03-11</td>
-      </tr>
-      <tr>
-        <td><span class="rank-chip">2</span></td>
-        <td>꿈의숲해링턴플레이스(미아동)</td>
-        <td class="price-cell">125,000 <span class="price-unit">만원</span></td>
-        <td>2026-06-06</td>
-      </tr>
-      <tr>
-        <td><span class="rank-chip">3</span></td>
-        <td>삼성래미안트리베라2단지(미아동)</td>
-        <td class="price-cell">124,000 <span class="price-unit">만원</span></td>
-        <td>2026-06-25</td>
-      </tr>
-      <tr>
-        <td><span class="rank-chip">4</span></td>
-        <td>미아동부센트레빌(미아동)</td>
-        <td class="price-cell">123,000 <span class="price-unit">만원</span></td>
-        <td>2026-05-08</td>
-      </tr>
-      <tr>
-        <td><span class="rank-chip">5</span></td>
-        <td>삼성래미안트리베라2단지(미아동)</td>
-        <td class="price-cell">122,500 <span class="price-unit">만원</span></td>
-        <td>2026-04-06</td>
-      </tr>
-    </tbody>
-  </table>
-</section>
+  <!-- S3. 동별 격차 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">동별 격차</h2>
+      <p class="body1 section-caption">4개 동 중위 평당가 · 거래 건수 병기</p>
+    </div>
+    <div class="chart-scroll" id="dong-chart"></div>
+    <p class="caption1 section-caption" id="dong-caption"></p>
+  </section>
 
+  <!-- S4. 단지 랭킹 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">단지 랭킹</h2>
+      <p class="body1 section-caption">거래 10건 이상 단지만 표시 · 컬럼 헤더 클릭 시 정렬</p>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <span class="caption1">동 필터</span>
+        <div class="filter-options" id="dong-filter" role="group" aria-label="동 필터"></div>
+      </div>
+      <div class="filter-group">
+        <span class="caption1">면적대 필터</span>
+        <div class="filter-options" id="area-filter" role="group" aria-label="면적대 필터"></div>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="rank-table" id="complex-table">
+        <thead id="complex-thead"></thead>
+        <tbody id="complex-tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="complex-empty" style="display:none;"></div>
+  </section>
+
+  <!-- S5. 면적대별 비교 -->
+  <section class="card">
+    <div class="section-header">
+      <h2 class="heading1">면적대별 비교</h2>
+      <p class="body1 section-caption">동 필터에 연동 · 소형(~60㎡) / 중형(60~85㎡) / 대형(85㎡~)</p>
+    </div>
+    <div class="chart-scroll" id="area-band-chart"></div>
+    <p class="caption1 section-caption" id="area-band-caption"></p>
+  </section>
+
+  <footer class="page-footer">
+    데이터 출처: seoul-apt-latest.csv (강북구 매매 실거래, 2025-07 ~ 2026-06) · 대표값은 평균이 아닌 중위값(median) 사용
+  </footer>
+
+</div>
+
+<script src="data/dashboard.js"></script>
+<script src="assets/dashboard.js"></script>
 </body>
 </html>

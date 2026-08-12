@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>임정 소개</title>
+<style>
+  /*
+    Wanted Montage(https://github.com/wanteddev/montage-web) 디자인 토큰을
+    순수 CSS 변수로 옮겨온 값입니다. (semantic/light theme, typography, spacing)
+  */
+  :root {
+    --primary-normal: #0066FF;
+    --primary-strong: #005EEB;
+    --primary-heavy: #0054D1;
+
+    --label-normal: #171719;
+    --label-strong: #000000;
+    --label-neutral: rgba(46, 47, 51, 0.88);
+    --label-alternative: rgba(55, 56, 60, 0.61);
+    --label-assistive: rgba(55, 56, 60, 0.28);
+
+    --bg-normal: #ffffff;
+    --bg-alternative: #F7F7F8;
+
+    --line-solid-normal: #E1E2E4;
+    --line-solid-neutral: #EAEBEC;
+    --line-normal-normal: rgba(112, 115, 124, 0.22);
+    --fill-normal: rgba(112, 115, 124, 0.08);
+
+    --status-positive: #00BF40;
+    --status-cautionary: #FF9200;
+    --status-negative: #FF4242;
+
+    --primary-bg-weak: rgba(0, 102, 255, 0.08);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+
+    --shadow-small: 0px 2px 4px -2px rgba(15, 15, 16, 0.06), 0px 4px 6px -1px rgba(15, 15, 16, 0.06);
+    --shadow-medium: 0px 4px 6px -2px rgba(15, 15, 16, 0.07), 0px 10px 15px -3px rgba(15, 15, 16, 0.07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary-normal: #3385FF;
+      --primary-strong: #1A75FF;
+      --primary-heavy: #0066FF;
+
+      --label-normal: #F7F7F8;
+      --label-strong: #ffffff;
+      --label-neutral: rgba(194, 196, 200, 0.88);
+      --label-alternative: rgba(174, 176, 182, 0.61);
+      --label-assistive: rgba(174, 176, 182, 0.28);
+
+      --bg-normal: #1B1C1E;
+      --bg-alternative: #0F0F10;
+
+      --line-solid-normal: #37383C;
+      --line-solid-neutral: #333438;
+      --line-normal-normal: rgba(135, 138, 147, 0.28);
+      --fill-normal: rgba(135, 138, 147, 0.22);
+
+      --primary-bg-weak: rgba(51, 133, 255, 0.12);
+      --shadow-small: 0px 2px 4px -2px rgba(0, 0, 0, 0.4), 0px 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-medium: 0px 4px 6px -2px rgba(0, 0, 0, 0.45), 0px 10px 15px -3px rgba(0, 0, 0, 0.45);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+      "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 56px 20px 80px;
+    background-color: var(--bg-alternative);
+    color: var(--label-normal);
+  }
+
+  /* Montage typography scale */
+  .title1 {
+    font-size: 2rem;
+    line-height: 2.75rem;
+    letter-spacing: -0.0253em;
+    font-weight: 700;
+    margin: 0;
+  }
+  .heading1 {
+    font-size: 1.375rem;
+    line-height: 1.875rem;
+    letter-spacing: -0.0194em;
+    font-weight: 700;
+    margin: 0;
+  }
+  .body1 {
+    font-size: 1rem;
+    line-height: 1.625rem;
+    letter-spacing: 0.0057em;
+    font-weight: 400;
+    margin: 0;
+  }
+  .label1 {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    letter-spacing: 0.0145em;
+    font-weight: 500;
+  }
+  .caption1 {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    letter-spacing: 0.0252em;
+    font-weight: 500;
+  }
+
+  .card {
+    background-color: var(--bg-normal);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-small);
+    padding: 32px;
+  }
+
+  section + section {
+    margin-top: 32px;
+  }
+
+  .profile-name {
+    color: var(--label-strong);
+  }
+
+  .profile-desc {
+    margin-top: 12px;
+    color: var(--label-neutral);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background-color: var(--primary-bg-weak);
+    color: var(--primary-normal);
+    font-weight: 600;
+    width: fit-content;
+    margin-bottom: 16px;
+  }
+
+  .info-grid {
+    margin-top: 24px;
+    border-top: 1px solid var(--line-solid-normal);
+  }
+
+  .info-row {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line-solid-normal);
+  }
+
+  .info-row dt {
+    flex: 0 0 96px;
+    color: var(--label-alternative);
+    font-weight: 500;
+  }
+
+  .info-row dd {
+    margin: 0;
+    color: var(--label-normal);
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 24px 0 28px;
+  }
+
+  .stat-card {
+    background-color: var(--bg-alternative);
+    border-radius: var(--radius-md);
+    padding: 16px;
+  }
+
+  .stat-card .caption1 {
+    color: var(--label-alternative);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    letter-spacing: -0.023em;
+    font-weight: 700;
+    color: var(--primary-normal);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  thead th {
+    background-color: var(--bg-alternative);
+    color: var(--label-alternative);
+    text-align: left;
+    padding: 12px 12px;
+    font-size: 0.75rem;
+    letter-spacing: 0.0252em;
+    font-weight: 600;
+    border-bottom: 1px solid var(--line-solid-normal);
+  }
+
+  tbody td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--line-solid-neutral);
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
+    color: var(--label-normal);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .rank-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background-color: var(--fill-normal);
+    color: var(--label-alternative);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .rank-chip.top {
+    background-color: var(--primary-normal);
+    color: #ffffff;
+  }
+
+  .price-cell {
+    font-weight: 600;
+    color: var(--label-normal);
+  }
+
+  .price-unit {
+    color: var(--label-alternative);
+    font-weight: 400;
+    font-size: 0.8125rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 20px;
+    color: var(--primary-normal);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="index.html">&larr; 강북구 대시보드로 돌아가기</a>
+
+<section class="card">
+  <span class="badge caption1">PROFILE</span>
+  <h1 class="title1 profile-name">임정</h1>
+  <p class="body1 profile-desc">
+    안녕하세요, 임정입니다.<br>
+    새로운 기술을 배우고 직접 만들어보는 것을 좋아합니다.<br>
+    꾸준히 성장하는 개발자가 되는 것이 목표입니다.
+  </p>
+
+  <dl class="info-grid">
+    <div class="info-row">
+      <dt class="label1">좋아하는 것</dt>
+      <dd class="body1">새로운 것을 배우고 만들어보는 것</dd>
+    </div>
+    <div class="info-row">
+      <dt class="label1">요즘 배우는 것</dt>
+      <dd class="body1">웹 개발 기초 (HTML, CSS, JavaScript)</dd>
+    </div>
+    <div class="info-row">
+      <dt class="label1">오늘 목표</dt>
+      <dd class="body1">나만의 소개 페이지 완성하기</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card">
+  <h2 class="heading1">강북구 아파트 실거래 살펴보기</h2>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="caption1">거래 건수</span>
+      <span class="stat-value">1,490건</span>
+    </div>
+    <div class="stat-card">
+      <span class="caption1">평균 물건금액</span>
+      <span class="stat-value">6.9억</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>순위</th>
+        <th>건물명</th>
+        <th>물건금액</th>
+        <th>계약일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="rank-chip top">1</span></td>
+        <td>송천센트레빌(미아동)</td>
+        <td class="price-cell">127,000 <span class="price-unit">만원</span></td>
+        <td>2026-03-11</td>
+      </tr>
+      <tr>
+        <td><span class="rank-chip">2</span></td>
+        <td>꿈의숲해링턴플레이스(미아동)</td>
+        <td class="price-cell">125,000 <span class="price-unit">만원</span></td>
+        <td>2026-06-06</td>
+      </tr>
+      <tr>
+        <td><span class="rank-chip">3</span></td>
+        <td>삼성래미안트리베라2단지(미아동)</td>
+        <td class="price-cell">124,000 <span class="price-unit">만원</span></td>
+        <td>2026-06-25</td>
+      </tr>
+      <tr>
+        <td><span class="rank-chip">4</span></td>
+        <td>미아동부센트레빌(미아동)</td>
+        <td class="price-cell">123,000 <span class="price-unit">만원</span></td>
+        <td>2026-05-08</td>
+      </tr>
+      <tr>
+        <td><span class="rank-chip">5</span></td>
+        <td>삼성래미안트리베라2단지(미아동)</td>
+        <td class="price-cell">122,500 <span class="price-unit">만원</span></td>
+        <td>2026-04-06</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

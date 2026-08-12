@@ -1,0 +1,842 @@
+{
+  "meta": {
+    "gu": "강북구",
+    "period": "2025-07~2026-06",
+    "total": 1490,
+    "generatedFrom": "seoul-apt-latest.csv"
+  },
+  "kpi": {
+    "medianPpp": 3039,
+    "pppRank": 23,
+    "pppTotal": 25,
+    "changePct": -1.33,
+    "changeRank": 21,
+    "deals": 1490,
+    "dealsChangePct": 56.01,
+    "dongGapRatio": 1.7
+  },
+  "guRanking": [
+    {
+      "gu": "강남구",
+      "medianPpp": 10750,
+      "n": 2933
+    },
+    {
+      "gu": "서초구",
+      "medianPpp": 7772,
+      "n": 2248
+    },
+    {
+      "gu": "송파구",
+      "medianPpp": 7328,
+      "n": 4573
+    },
+    {
+      "gu": "용산구",
+      "medianPpp": 7152,
+      "n": 1286
+    },
+    {
+      "gu": "성동구",
+      "medianPpp": 6882,
+      "n": 2410
+    },
+    {
+      "gu": "광진구",
+      "medianPpp": 6240,
+      "n": 1395
+    },
+    {
+      "gu": "마포구",
+      "medianPpp": 5966,
+      "n": 2556
+    },
+    {
+      "gu": "강동구",
+      "medianPpp": 5673,
+      "n": 3953
+    },
+    {
+      "gu": "동작구",
+      "medianPpp": 5592,
+      "n": 2792
+    },
+    {
+      "gu": "중구",
+      "medianPpp": 5228,
+      "n": 1034
+    },
+    {
+      "gu": "영등포구",
+      "medianPpp": 5226,
+      "n": 3486
+    },
+    {
+      "gu": "양천구",
+      "medianPpp": 4582,
+      "n": 2894
+    },
+    {
+      "gu": "서대문구",
+      "medianPpp": 4444,
+      "n": 2908
+    },
+    {
+      "gu": "종로구",
+      "medianPpp": 4275,
+      "n": 639
+    },
+    {
+      "gu": "강서구",
+      "medianPpp": 4238,
+      "n": 4776
+    },
+    {
+      "gu": "동대문구",
+      "medianPpp": 4156,
+      "n": 3498
+    },
+    {
+      "gu": "성북구",
+      "medianPpp": 3851,
+      "n": 4414
+    },
+    {
+      "gu": "은평구",
+      "medianPpp": 3784,
+      "n": 3311
+    },
+    {
+      "gu": "관악구",
+      "medianPpp": 3732,
+      "n": 2540
+    },
+    {
+      "gu": "노원구",
+      "medianPpp": 3377,
+      "n": 7190
+    },
+    {
+      "gu": "구로구",
+      "medianPpp": 3321,
+      "n": 3990
+    },
+    {
+      "gu": "중랑구",
+      "medianPpp": 3099,
+      "n": 2525
+    },
+    {
+      "gu": "강북구",
+      "medianPpp": 3039,
+      "n": 1490
+    },
+    {
+      "gu": "금천구",
+      "medianPpp": 2781,
+      "n": 1171
+    },
+    {
+      "gu": "도봉구",
+      "medianPpp": 2725,
+      "n": 2447
+    }
+  ],
+  "monthly": [
+    {
+      "ym": "2025-07",
+      "deals": 78,
+      "medianPpp": 2910,
+      "ma3": null
+    },
+    {
+      "ym": "2025-08",
+      "deals": 87,
+      "medianPpp": 2988,
+      "ma3": null
+    },
+    {
+      "ym": "2025-09",
+      "deals": 116,
+      "medianPpp": 3116,
+      "ma3": 3004.67
+    },
+    {
+      "ym": "2025-10",
+      "deals": 117,
+      "medianPpp": 3269,
+      "ma3": 3124.33
+    },
+    {
+      "ym": "2025-11",
+      "deals": 70,
+      "medianPpp": 2952,
+      "ma3": 3112.33
+    },
+    {
+      "ym": "2025-12",
+      "deals": 114,
+      "medianPpp": 3036,
+      "ma3": 3085.67
+    },
+    {
+      "ym": "2026-01",
+      "deals": 123,
+      "medianPpp": 3245,
+      "ma3": 3077.67
+    },
+    {
+      "ym": "2026-02",
+      "deals": 159,
+      "medianPpp": 3039,
+      "ma3": 3106.67
+    },
+    {
+      "ym": "2026-03",
+      "deals": 140,
+      "medianPpp": 2950,
+      "ma3": 3078.0
+    },
+    {
+      "ym": "2026-04",
+      "deals": 203,
+      "medianPpp": 3030,
+      "ma3": 3006.33
+    },
+    {
+      "ym": "2026-05",
+      "deals": 193,
+      "medianPpp": 3058,
+      "ma3": 3012.67
+    },
+    {
+      "ym": "2026-06",
+      "deals": 90,
+      "medianPpp": 2956,
+      "ma3": 3014.67
+    }
+  ],
+  "dongs": [
+    {
+      "dong": "미아동",
+      "medianPpp": 3273,
+      "n": 1041,
+      "lowSample": false
+    },
+    {
+      "dong": "번동",
+      "medianPpp": 2746,
+      "n": 252,
+      "lowSample": false
+    },
+    {
+      "dong": "수유동",
+      "medianPpp": 2613,
+      "n": 180,
+      "lowSample": false
+    },
+    {
+      "dong": "우이동",
+      "medianPpp": 1927,
+      "n": 17,
+      "lowSample": true
+    }
+  ],
+  "complexes": [
+    {
+      "complex": "송천센트레빌",
+      "dong": "미아동",
+      "medianPpp": 4548,
+      "n": 18,
+      "medianPrice": 103500,
+      "byArea": {
+        "소형": {
+          "medianPpp": 5571,
+          "n": 6,
+          "medianPrice": 101000
+        },
+        "중형": {
+          "medianPpp": 4478,
+          "n": 2,
+          "medianPrice": 101250
+        },
+        "대형": {
+          "medianPpp": 4122,
+          "n": 10,
+          "medianPrice": 111500
+        }
+      }
+    },
+    {
+      "complex": "미아동부센트레빌",
+      "dong": "미아동",
+      "medianPpp": 4238,
+      "n": 33,
+      "medianPrice": 92500,
+      "byArea": {
+        "대형": {
+          "medianPpp": 3712,
+          "n": 17,
+          "medianPrice": 95500
+        },
+        "중형": {
+          "medianPpp": 4596,
+          "n": 16,
+          "medianPrice": 83500
+        }
+      }
+    },
+    {
+      "complex": "수유아름채",
+      "dong": "수유동",
+      "medianPpp": 4129,
+      "n": 19,
+      "medianPrice": 25000,
+      "byArea": {
+        "소형": {
+          "medianPpp": 4129,
+          "n": 19,
+          "medianPrice": 25000
+        }
+      }
+    },
+    {
+      "complex": "꿈의숲해링턴플레이스",
+      "dong": "미아동",
+      "medianPpp": 4000,
+      "n": 78,
+      "medianPrice": 90250,
+      "byArea": {
+        "중형": {
+          "medianPpp": 3761,
+          "n": 33,
+          "medianPrice": 95000
+        },
+        "소형": {
+          "medianPpp": 4676,
+          "n": 34,
+          "medianPrice": 84125
+        },
+        "대형": {
+          "medianPpp": 3441,
+          "n": 11,
+          "medianPrice": 97000
+        }
+      }
+    },
+    {
+      "complex": "래미안트리베라1단지",
+      "dong": "미아동",
+      "medianPpp": 3931,
+      "n": 59,
+      "medianPrice": 91000,
+      "byArea": {
+        "소형": {
+          "medianPpp": 4391,
+          "n": 23,
+          "medianPrice": 79300
+        },
+        "대형": {
+          "medianPpp": 3505,
+          "n": 36,
+          "medianPrice": 95000
+        }
+      }
+    },
+    {
+      "complex": "꿈의숲한신더휴",
+      "dong": "미아동",
+      "medianPpp": 3894,
+      "n": 19,
+      "medianPrice": 78000,
+      "byArea": {
+        "중형": {
+          "medianPpp": 3982,
+          "n": 16,
+          "medianPrice": 78000
+        },
+        "대형": {
+          "medianPpp": 3051,
+          "n": 3,
+          "medianPrice": 78400
+        }
+      }
+    },
+    {
+      "complex": "삼성래미안트리베라2단지",
+      "dong": "미아동",
+      "medianPpp": 3876,
+      "n": 79,
+      "medianPrice": 95000,
+      "byArea": {
+        "중형": {
+          "medianPpp": 3791,
+          "n": 36,
+          "medianPrice": 96750
+        },
+        "소형": {
+          "medianPpp": 4441,
+          "n": 27,
+          "medianPrice": 79500
+        },
+        "대형": {
+          "medianPpp": 3245,
+          "n": 16,
+          "medianPrice": 112000
+        }
+      }
+    },
+    {
+      "complex": "꿈의숲롯데캐슬",
+      "dong": "미아동",
+      "medianPpp": 3650,
+      "n": 28,
+      "medianPrice": 91000,
+      "byArea": {
+        "대형": {
+          "medianPpp": 3582,
+          "n": 22,
+          "medianPrice": 92250
+        },
+        "중형": {
+          "medianPpp": 4338,
+          "n": 6,
+          "medianPrice": 78850
+        }
+      }
+    },
+    {
+      "complex": "주공1단지",
+      "dong": "번동",
+      "medianPpp": 3562,
+      "n": 84,
+      "medianPrice": 52100,
+      "byArea": {
+        "중형": {
+          "medianPpp": 2912,
+          "n": 16,
+          "medianPrice": 69000
+        },
+        "소형": {
+          "medianPpp": 3635,
+          "n": 68,
+          "medianPrice": 49750
+        }
+      }
+    },
+    {
+      "complex": "두산위브트레지움",
+      "dong": "미아동",
+      "medianPpp": 3534,
+      "n": 89,
+      "medianPrice": 85700,
+      "byArea": {
+        "대형": {
+          "medianPpp": 3336,
+          "n": 60,
+          "medianPrice": 88750
+        },
+        "소형": {
+          "medianPpp": 4194,
+          "n": 20,
+          "medianPrice": 75650
+        },
+        "중형": {
+          "medianPpp": 4197,
+          "n": 9,
+          "medianPrice": 76300
+        }
+      }
+    },
+    {
+      "complex": "경남아너스빌(1356-0)",
+      "dong": "미아동",
+      "medianPpp": 3091,
+      "n": 47,
+      "medianPrice": 80000,
+      "byArea": {
+        "대형": {
+          "medianPpp": 2838,
+          "n": 36,
+          "medianPrice": 83500
+        },
+        "중형": {
+          "medianPpp": 4128,
+          "n": 11,
+          "medianPrice": 75000
+        }
+      }
+    },
+    {
+      "complex": "래미안수유",
+      "dong": "수유동",
+      "medianPpp": 3052,
+      "n": 24,
+      "medianPrice": 58850,
+      "byArea": {
+        "중형": {
+          "medianPpp": 3184,
+          "n": 16,
+          "medianPrice": 57775
+        },
+        "대형": {
+          "medianPpp": 2776,
+          "n": 8,
+          "medianPrice": 75250
+        }
+      }
+    },
+    {
+      "complex": "에스케이북한산시티",
+      "dong": "미아동",
+      "medianPpp": 2888,
+      "n": 260,
+      "medianPrice": 70925,
+      "byArea": {
+        "중형": {
+          "medianPpp": 3300,
+          "n": 167,
+          "medianPrice": 68000
+        },
+        "대형": {
+          "medianPpp": 2566,
+          "n": 93,
+          "medianPrice": 75000
+        }
+      }
+    },
+    {
+      "complex": "삼각산아이원",
+      "dong": "미아동",
+      "medianPpp": 2871,
+      "n": 121,
+      "medianPrice": 73700,
+      "byArea": {
+        "소형": {
+          "medianPpp": 3584,
+          "n": 24,
+          "medianPrice": 64900
+        },
+        "중형": {
+          "medianPpp": 2869,
+          "n": 75,
+          "medianPrice": 73650
+        },
+        "대형": {
+          "medianPpp": 2287,
+          "n": 22,
+          "medianPrice": 79600
+        }
+      }
+    },
+    {
+      "complex": "주공4단지",
+      "dong": "번동",
+      "medianPpp": 2841,
+      "n": 27,
+      "medianPrice": 45000,
+      "byArea": {
+        "소형": {
+          "medianPpp": 2872,
+          "n": 22,
+          "medianPrice": 42000
+        },
+        "중형": {
+          "medianPpp": 2588,
+          "n": 5,
+          "medianPrice": 60000
+        }
+      }
+    },
+    {
+      "complex": "미아한일유앤아이",
+      "dong": "미아동",
+      "medianPpp": 2771,
+      "n": 17,
+      "medianPrice": 73000,
+      "byArea": {
+        "중형": {
+          "medianPpp": 2802,
+          "n": 13,
+          "medianPrice": 71800
+        },
+        "대형": {
+          "medianPpp": 2266,
+          "n": 4,
+          "medianPrice": 77750
+        }
+      }
+    },
+    {
+      "complex": "벽산라이브파크",
+      "dong": "미아동",
+      "medianPpp": 2712,
+      "n": 118,
+      "medianPrice": 62000,
+      "byArea": {
+        "중형": {
+          "medianPpp": 3270,
+          "n": 25,
+          "medianPrice": 59450
+        },
+        "소형": {
+          "medianPpp": 3180,
+          "n": 31,
+          "medianPrice": 57500
+        },
+        "대형": {
+          "medianPpp": 2478,
+          "n": 62,
+          "medianPrice": 66600
+        }
+      }
+    },
+    {
+      "complex": "수유벽산1차",
+      "dong": "수유동",
+      "medianPpp": 2638,
+      "n": 53,
+      "medianPrice": 65000,
+      "byArea": {
+        "대형": {
+          "medianPpp": 2546,
+          "n": 32,
+          "medianPrice": 68250
+        },
+        "중형": {
+          "medianPpp": 2716,
+          "n": 21,
+          "medianPrice": 52500
+        }
+      }
+    },
+    {
+      "complex": "한솔솔파크",
+      "dong": "번동",
+      "medianPpp": 2543,
+      "n": 11,
+      "medianPrice": 65400,
+      "byArea": {
+        "대형": {
+          "medianPpp": 2543,
+          "n": 11,
+          "medianPrice": 65400
+        }
+      }
+    },
+    {
+      "complex": "푸르지오시티",
+      "dong": "미아동",
+      "medianPpp": 2372,
+      "n": 15,
+      "medianPrice": 13400,
+      "byArea": {
+        "소형": {
+          "medianPpp": 2372,
+          "n": 15,
+          "medianPrice": 13400
+        }
+      }
+    },
+    {
+      "complex": "현대(190-2)",
+      "dong": "미아동",
+      "medianPpp": 2371,
+      "n": 11,
+      "medianPrice": 61000,
+      "byArea": {
+        "대형": {
+          "medianPpp": 2371,
+          "n": 11,
+          "medianPrice": 61000
+        }
+      }
+    },
+    {
+      "complex": "해모로아파트",
+      "dong": "번동",
+      "medianPpp": 2370,
+      "n": 23,
+      "medianPrice": 59300,
+      "byArea": {
+        "중형": {
+          "medianPpp": 2750,
+          "n": 9,
+          "medianPrice": 50000
+        },
+        "대형": {
+          "medianPpp": 2323,
+          "n": 14,
+          "medianPrice": 60650
+        }
+      }
+    },
+    {
+      "complex": "성북프라자",
+      "dong": "미아동",
+      "medianPpp": 2326,
+      "n": 10,
+      "medianPrice": 48400,
+      "byArea": {
+        "중형": {
+          "medianPpp": 2326,
+          "n": 10,
+          "medianPrice": 48400
+        }
+      }
+    },
+    {
+      "complex": "번동솔그린",
+      "dong": "번동",
+      "medianPpp": 2322,
+      "n": 16,
+      "medianPrice": 50500,
+      "byArea": {
+        "소형": {
+          "medianPpp": 2372,
+          "n": 8,
+          "medianPrice": 43000
+        },
+        "중형": {
+          "medianPpp": 2223,
+          "n": 8,
+          "medianPrice": 57000
+        }
+      }
+    },
+    {
+      "complex": "신원",
+      "dong": "번동",
+      "medianPpp": 2223,
+      "n": 11,
+      "medianPrice": 55400,
+      "byArea": {
+        "중형": {
+          "medianPpp": 2223,
+          "n": 11,
+          "medianPrice": 55400
+        }
+      }
+    },
+    {
+      "complex": "기산그린",
+      "dong": "번동",
+      "medianPpp": 2186,
+      "n": 13,
+      "medianPrice": 40600,
+      "byArea": {
+        "중형": {
+          "medianPpp": 2203,
+          "n": 11,
+          "medianPrice": 40000
+        },
+        "대형": {
+          "medianPpp": 1952,
+          "n": 2,
+          "medianPrice": 50250
+        }
+      }
+    },
+    {
+      "complex": "극동",
+      "dong": "수유동",
+      "medianPpp": 2058,
+      "n": 15,
+      "medianPrice": 54300,
+      "byArea": {
+        "대형": {
+          "medianPpp": 2058,
+          "n": 14,
+          "medianPrice": 54550
+        },
+        "중형": {
+          "medianPpp": 2244,
+          "n": 1,
+          "medianPrice": 48500
+        }
+      }
+    }
+  ],
+  "areaBands": [
+    {
+      "band": "소형(~60㎡)",
+      "medianPpp": 3634,
+      "n": 367
+    },
+    {
+      "band": "중형(60~85㎡)",
+      "medianPpp": 3066,
+      "n": 580
+    },
+    {
+      "band": "대형(85~㎡)",
+      "medianPpp": 2644,
+      "n": 543
+    }
+  ],
+  "dongAreaBands": {
+    "미아동": [
+      {
+        "band": "소형(~60㎡)",
+        "medianPpp": 4214,
+        "n": 184
+      },
+      {
+        "band": "중형(60~85㎡)",
+        "medianPpp": 3399,
+        "n": 435
+      },
+      {
+        "band": "대형(85~㎡)",
+        "medianPpp": 2858,
+        "n": 422
+      }
+    ],
+    "번동": [
+      {
+        "band": "소형(~60㎡)",
+        "medianPpp": 3435,
+        "n": 115
+      },
+      {
+        "band": "중형(60~85㎡)",
+        "medianPpp": 2332,
+        "n": 84
+      },
+      {
+        "band": "대형(85~㎡)",
+        "medianPpp": 2362,
+        "n": 53
+      }
+    ],
+    "수유동": [
+      {
+        "band": "소형(~60㎡)",
+        "medianPpp": 2889,
+        "n": 68
+      },
+      {
+        "band": "중형(60~85㎡)",
+        "medianPpp": 2690,
+        "n": 55
+      },
+      {
+        "band": "대형(85~㎡)",
+        "medianPpp": 2194,
+        "n": 57
+      }
+    ],
+    "우이동": [
+      {
+        "band": "중형(60~85㎡)",
+        "medianPpp": 1519,
+        "n": 6
+      },
+      {
+        "band": "대형(85~㎡)",
+        "medianPpp": 2214,
+        "n": 11
+      }
+    ]
+  }
+}
