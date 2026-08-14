@@ -104,6 +104,8 @@ a { color: var(--primary-normal); }
 .top-nav {
   display: flex;
   justify-content: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
   padding: 16px 20px 0;
   max-width: 960px;
   margin: 0 auto;

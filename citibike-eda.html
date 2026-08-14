@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="뉴욕 Citi Bike 16,786건을 구조 확인 → 품질·이상치 → 단변량 → 관계 → 인사이트의 표준 EDA 5단계로 분석한 보고서.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚲</text></svg>">
+<title>뉴욕 따릉이 EDA 5단계</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f5f5f2; --surface:#fcfcfb; --sunk:#efefea;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#7c7a74;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.11);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --neg:#e34948; --warn:#ec835a; --good:#0ca30c;
+  --seq2:#9ec5f4; --seq4:#3987e5; --seq6:#184f95;
+  --shadow:0 1px 2px rgba(11,11,11,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --sunk:#131312;
+    --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.11);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --neg:#e66767; --warn:#ec835a; --good:#0ca30c;
+    --seq2:#184f95; --seq4:#3987e5; --seq6:#9ec5f4;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --sunk:#131312;
+  --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.11);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --neg:#e66767; --warn:#ec835a; --good:#0ca30c;
+  --seq2:#184f95; --seq4:#3987e5; --seq6:#9ec5f4;
+  --shadow:none;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+  font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Menlo",monospace}
+.wrap{max-width:1060px; margin:0 auto; padding:0 22px 96px}
+
+/* ---------- masthead ---------- */
+.mast{padding:52px 0 28px; border-bottom:2px solid var(--ink)}
+.kicker{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 14px}
+h1{margin:0; font-size:clamp(28px,4.8vw,46px); font-weight:800;
+  letter-spacing:-.028em; line-height:1.08; text-wrap:balance}
+.dek{margin:16px 0 0; max-width:62ch; color:var(--ink2); font-size:16px}
+
+/* ---------- toc ---------- */
+.toc{display:flex; flex-wrap:wrap; margin:0; padding:0; list-style:none;
+  border-bottom:1px solid var(--border)}
+.toc li{flex:1 1 165px; border-left:1px solid var(--border)}
+.toc li:first-child{border-left:0}
+.toc a{display:block; padding:16px 14px 18px; text-decoration:none; color:inherit}
+.toc a:hover{background:var(--sunk)}
+.toc .n{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px;
+  letter-spacing:.1em; color:var(--muted); display:block}
+.toc .t{font-size:14px; font-weight:650; margin-top:4px; display:block; letter-spacing:-.01em}
+.toc li:first-child a{padding-left:0}
+
+/* ---------- step header ---------- */
+.step{margin-top:56px; scroll-margin-top:16px}
+.step-head{border-top:2px solid var(--ink); padding-top:22px}
+.step-num{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11.5px;
+  letter-spacing:.14em; color:var(--muted)}
+.step h2{margin:8px 0 0; font-size:clamp(23px,3.4vw,31px); font-weight:800;
+  letter-spacing:-.026em; line-height:1.2; text-wrap:balance}
+.step .goal{margin:12px 0 0; color:var(--ink2); max-width:64ch}
+.step .goal b{color:var(--ink); font-weight:650}
+
+/* ---------- card ---------- */
+.card{margin-top:26px; background:var(--surface); border:1px solid var(--border);
+  border-radius:3px; box-shadow:var(--shadow); overflow:hidden}
+.card > *{padding-left:26px; padding-right:26px}
+.card-head{padding-top:22px; padding-bottom:18px; border-bottom:1px solid var(--border)}
+.pair{display:inline-flex; align-items:center; gap:9px;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11.5px;
+  letter-spacing:.05em; color:var(--muted); border:1px solid var(--border);
+  border-radius:2px; padding:4px 9px; margin-bottom:13px}
+.pair b{color:var(--ink2); font-weight:600}
+.pair .x{color:var(--s2); font-weight:700}
+.card h3{margin:0; font-size:clamp(18px,2.5vw,23px); font-weight:750;
+  letter-spacing:-.02em; line-height:1.3; text-wrap:balance}
+.card .lede{margin:10px 0 0; color:var(--ink2); max-width:66ch}
+
+.figbox{padding-top:24px; padding-bottom:8px}
+.legend{display:flex; flex-wrap:wrap; gap:18px; margin:0 0 15px; align-items:center}
+.lg{display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--ink2)}
+.sw{width:11px; height:11px; border-radius:2px; flex:none}
+.sw.dot{border-radius:50%}
+
+.scrollx{overflow-x:auto; overflow-y:hidden; padding-bottom:2px}
+.scrollx svg{min-width:600px}
+svg{display:block; width:100%; height:auto; overflow:visible}
+.gridline{stroke:var(--grid); stroke-width:1}
+.baseline{stroke:var(--axis); stroke-width:1}
+.tick{fill:var(--muted); font-size:11px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.tick.tn{font-variant-numeric:tabular-nums}
+.catlab{fill:var(--ink2); font-size:12px}
+.vlab{fill:var(--ink2); font-size:11.5px; font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.hit{fill:transparent; cursor:pointer}
+.mark{transition:opacity .12s}
+svg.dim .mark{opacity:.34}
+svg.dim .mark.on{opacity:1}
+
+.stats{display:flex; flex-wrap:wrap; border-top:1px solid var(--border); margin-top:22px}
+.card .stats{padding-left:0; padding-right:0}
+.stat{flex:1 1 190px; padding:17px 26px 19px; border-left:1px solid var(--border)}
+.stat:first-child{border-left:0}
+.stat .lab{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.stat .val{font-size:21px; font-weight:750; letter-spacing:-.02em; margin-top:5px;
+  font-variant-numeric:tabular-nums}
+.stat .sub{font-size:12.5px; color:var(--ink2); margin-top:2px}
+
+.note{padding-top:19px; padding-bottom:21px; border-top:1px solid var(--border);
+  font-size:14px; color:var(--ink2)}
+.note b{color:var(--ink); font-weight:650}
+.note.flag{border-left:3px solid var(--warn); background:var(--sunk)}
+.note + .note{border-top:1px solid var(--border)}
+
+details{border-top:1px solid var(--border); background:var(--sunk)}
+details summary{cursor:pointer; padding:12px 26px; font-size:12.5px; color:var(--muted);
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace; list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸ "}
+details[open] summary::before{content:"▾ "}
+details summary:hover{color:var(--ink2)}
+.tbl-scroll{overflow-x:auto; padding:0 26px 20px}
+.card .tbl-scroll{padding-left:26px; padding-right:26px}
+table{border-collapse:collapse; font-size:12.5px; width:100%; min-width:420px}
+th,td{padding:6px 12px 6px 0; text-align:right; white-space:nowrap;
+  border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--muted); font-weight:600; font-size:11px;
+  letter-spacing:.06em; text-transform:uppercase}
+td.tl,th.tl{text-align:left}
+tr.hl td{background:var(--sunk); font-weight:650; color:var(--ink)}
+.chip{display:inline-block; font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:10px; padding:1px 6px; border-radius:2px; border:1px solid var(--border); color:var(--ink2)}
+.chip.d{border-color:var(--s1); color:var(--s1)}
+.chip.n{border-color:var(--s2); color:var(--s2)}
+.chip.o{border-color:var(--s3); color:var(--s3)}
+
+/* ---------- verdict / plan ---------- */
+.vlist{list-style:none; margin:24px 0 0; padding:0; display:grid; gap:1px;
+  background:var(--border); border:1px solid var(--border)}
+.vlist li{background:var(--surface); padding:18px 22px; display:grid;
+  grid-template-columns:auto 1fr; gap:16px; align-items:start}
+.vtag{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10.5px;
+  letter-spacing:.09em; color:var(--surface); background:var(--ink);
+  padding:3px 7px; border-radius:2px; white-space:nowrap; margin-top:3px}
+.vtag.w{background:var(--warn); color:#1a1a19}
+.vlist b{font-weight:700}
+.vlist p{margin:5px 0 0; color:var(--ink2); font-size:14px}
+
+.routebox{margin-top:26px; background:var(--surface); border:1px solid var(--border);
+  border-radius:3px; padding:22px 26px 18px}
+.routebox h4{margin:0 0 3px; font-size:15px; font-weight:700}
+.routebox p{margin:0 0 4px; font-size:13px; color:var(--ink2)}
+.acts{display:grid; gap:14px; margin-top:26px}
+.act{background:var(--surface); border:1px solid var(--border); border-radius:3px;
+  border-left:3px solid var(--pr); padding:20px 24px 22px}
+.act.p1{--pr:#d03b3b} .act.p2{--pr:#ec835a} .act.p3{--pr:var(--axis)}
+.act header{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px; margin-bottom:4px}
+.prio{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10.5px;
+  letter-spacing:.09em; padding:3px 8px; border-radius:2px; white-space:nowrap;
+  background:var(--pr); color:#fff}
+.act.p3 .prio{color:var(--ink)}
+.act h4{margin:0; font-size:17px; font-weight:700; letter-spacing:-.015em; flex:1 1 260px}
+.act dl{margin:14px 0 0; display:grid; gap:9px}
+.act dl > div{display:grid; grid-template-columns:78px 1fr; gap:14px; align-items:start}
+.act dt{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10.5px;
+  letter-spacing:.08em; color:var(--muted); padding-top:4px}
+.act dd{margin:0; font-size:14px; color:var(--ink2)}
+.act dd b{color:var(--ink); font-weight:650}
+.act dd em{font-style:normal; font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink)}
+.act .dep{margin-top:12px; padding-top:10px; border-top:1px dashed var(--border);
+  font-size:12.5px; color:var(--muted)}
+
+footer{margin-top:48px; padding-top:20px; border-top:1px solid var(--border);
+  font-size:12.5px; color:var(--muted)}
+footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:var(--ink2)}
+
+#tip{position:fixed; z-index:50; pointer-events:none; opacity:0;
+  background:var(--ink); color:var(--page); padding:7px 10px; border-radius:3px;
+  font-size:12px; line-height:1.45; white-space:nowrap; transition:opacity .1s;
+  font-variant-numeric:tabular-nums; box-shadow:0 3px 14px rgba(0,0,0,.22)}
+#tip b{font-weight:700}
+:focus-visible{outline:2px solid var(--s1); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:640px){
+  .card > *{padding-left:16px; padding-right:16px}
+  .stat{padding-left:16px; padding-right:16px}
+  .tbl-scroll,.card .tbl-scroll{padding-left:16px; padding-right:16px}
+  details summary{padding-left:16px; padding-right:16px}
+}
+@media (max-width:560px){ .act dl > div{grid-template-columns:1fr; gap:2px} .act dt{padding-top:0} }
+</style>
+<style>
+.site-nav{max-width:1060px; margin:0 auto; padding:16px 22px 0; display:flex; gap:18px;
+  font-size:13.5px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.site-nav a{color:var(--muted); text-decoration:none}
+.site-nav a:hover{color:var(--ink); text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="site-nav"><a href="index.html">← 강북구 아파트 대시보드</a><a href="profile.html">프로필</a></div>
+
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="kicker">EDA Level 2 · NY Citi Bike · 2023 Q1 · Jersey City</p>
+  <h1>구조 → 품질 → 단변량 → 관계 → SO WHAT</h1>
+  <p class="dek">
+    공유자전거 16,786건을 표준 EDA 5단계로 통과시켰다. 각 단계는 <b>다음 단계에서 무엇을 믿어도 되는지</b>를
+    확정하기 위해 존재한다 — 구조를 모르면 품질을 못 보고, 품질을 모르면 관계가 전부 가짜일 수 있다.
+  </p>
+</header>
+
+<ol class="toc">
+  <li><a href="#s1"><span class="n">STEP 01</span><span class="t">데이터 구조 확인</span></a></li>
+  <li><a href="#s2"><span class="n">STEP 02</span><span class="t">데이터 퀄리티 · 이상치</span></a></li>
+  <li><a href="#s3"><span class="n">STEP 03</span><span class="t">개별 속성 분석</span></a></li>
+  <li><a href="#s4"><span class="n">STEP 04</span><span class="t">속성 간 관계 분석</span></a></li>
+  <li><a href="#s5"><span class="n">STEP 05</span><span class="t">인사이트 · SO WHAT</span></a></li>
+</ol>
+
+<!-- ==================== STEP 1 ==================== -->
+<section class="step" id="s1">
+  <div class="step-head">
+    <span class="step-num mono">STEP 01</span>
+    <h2>데이터 구조 확인</h2>
+    <p class="goal">
+      행·열의 크기와 각 변수의 <b>측정 척도</b>를 확정한다. 여기서 정해진 척도가 3단계에서 쓸 대표값과
+      4단계에서 쓸 검정 방법을 결정한다. 중복 제거를 먼저 하는 이유는 <b>같은 행이 두 번 세어지면
+      이후의 모든 비율이 틀리기 때문</b>이다.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>16,786행</b><span class="x">×</span><b>17열</b></span>
+      <h3>변수는 17개지만, 서로 독립인 정보는 11개뿐이다</h3>
+      <p class="lede">
+        척도별로 분류하고 고유값 수를 세어보면 <b>파생·종속 관계</b>가 드러난다. 이걸 모르고 17개를 전부
+        모델에 넣으면 같은 정보를 여러 번 세게 된다.
+      </p>
+    </div>
+    <div class="tbl-scroll" style="padding-top:22px"><table id="tvar"></table></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">중복 행</div><div class="val" style="color:var(--good)">0건</div><div class="sub">17개 열 전체 일치 기준</div></div>
+      <div class="stat"><div class="lab">실질 독립 변수</div><div class="val">11 / 17</div><div class="sub">파생·종속 6개 제외</div></div>
+      <div class="stat"><div class="lab">관측 단위</div><div class="val">1행 = 1회 대여</div><div class="sub">사용자 단위 아님</div></div>
+    </div>
+    <p class="note">
+      <b>종속 관계 3묶음 —</b>
+      ① <code>Birth Year</code>(54) → <code>Age</code>(54) → <code>Age Groups</code>(7)는 하나의 정보를 세 번 적은 것이다.
+      ② <code>Trip Duration</code>(초, 고유값 1,758)을 분으로 반올림한 것이 <code>Trip_Duration_in_min</code>(고유값 129)이다.
+      ③ <code>Month</code>(3) → <code>Season</code>(2), <code>Station ID</code> ↔ <code>Station Name</code>도 1:1이다.
+      관계 분석에서는 각 묶음에서 <b>하나씩만</b> 쓴다.
+    </p>
+    <p class="note flag">
+      <b>구조 단계에서 이미 잡히는 이상 —</b> 출발 정류장은 <b>50개</b>인데 도착 정류장은 <b>55개</b>다.
+      5곳은 도착 기록만 있고 출발 기록이 하나도 없다. 즉 <b>자전거가 들어가기만 하고 나온 적이 없는 지점</b>이
+      존재한다는 뜻 — 2단계에서 정체를 밝힌다.
+    </p>
+    <p class="note">
+      <b>관측 단위 주의 —</b> 1행은 &lsquo;1명&rsquo;이 아니라 &lsquo;1회 대여&rsquo;다. 사용자 ID가 없으므로
+      &ldquo;몇 명이 이용했는가&rdquo;, &ldquo;1인당 몇 회 타는가&rdquo;는 <b>이 데이터로 답할 수 없다</b>.
+      고객 단위 분석이 필요하면 여기서 멈추고 데이터를 다시 받아야 한다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== STEP 2 ==================== -->
+<section class="step" id="s2">
+  <div class="step-head">
+    <span class="step-num mono">STEP 02</span>
+    <h2>데이터 퀄리티 확인 → 이상치</h2>
+    <p class="goal">
+      결측·중복을 처리한 뒤 이상치를 본다. 이상치는 <b>지우기 위해서만 보는 게 아니다</b> —
+      ① 충성 고객처럼 <b>분리해서 따로 봐야 할 집단</b>인지, ② 서비스의 <b>특이 지점</b>을 알려주는
+      신호인지 먼저 판정하고, 진짜 오류만 지운다.
+    </p>
+  </div>
+
+  <!-- 2-1 파이프라인 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>결측</b><span class="x">·</span><b>중복</b><span class="x">·</span><b>이상치</b></span>
+      <h3>20,400행이 16,786행이 되기까지</h3>
+      <p class="lede">
+        각 단계에서 <b>무엇이 왜 빠졌는지</b>가 기록되어야 결과를 신뢰할 수 있다. 아래 4단계 중
+        마지막 하나는 근거가 문서와 맞지 않는다.
+      </p>
+    </div>
+    <div class="figbox"><div id="c8"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">결측 셀</div><div class="val" style="color:var(--good)">0개</div><div class="sub">17열 × 16,786행 전수</div></div>
+      <div class="stat"><div class="lab">이상치 제거</div><div class="val">58건 (0.35%)</div><div class="sub">도메인 규칙 기준</div></div>
+      <div class="stat"><div class="lab">최종 보존율</div><div class="val">82.3%</div><div class="sub">20,400 → 16,786</div></div>
+    </div>
+    <p class="note">
+      <b>58건의 정체가 정확히 맞아떨어진다 —</b> 이용시간 1,500분 초과 <b>5건</b>(최대 6,515분 = 109시간, 시스템상 불가능)과
+      나이 75세 초과 <b>54건</b>의 합집합이다. 두 조건에 모두 걸린 1건을 빼면 정확히 58건.
+      제거 근거가 재현되는지 이렇게 확인해야 한다.
+    </p>
+    <p class="note flag">
+      <b>워크북 <code>RAW</code> 시트는 쓰면 안 된다.</b> 여기서 562건이 더 빠져 있는데,
+      537건은 <b>이용시간 25분 초과</b>분이고 나머지 25건은 근거를 찾을 수 없다.
+      25분 절단은 문서화된 규칙(1,500분)과 다르고, 하필 <b>여가 이용 전체</b>를 날린다 —
+      이 시트로 계산하면 일회권 중앙 이용시간이 20분에서 12분으로 줄어든다.
+      그래서 이 보고서는 <code>RAW_cleaning_outlier</code>를 쓴다.
+    </p>
+  </div>
+
+  <!-- 2-2 이상치 기준 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>IQR 규칙</b><span class="x">vs</span><b>도메인 규칙</b></span>
+      <h3>IQR을 기계적으로 적용하면 정상 이용의 7%가 날아간다</h3>
+      <p class="lede">
+        이용시간 분포의 왜도는 <b>33.7</b>이다. 이렇게 한쪽으로 쏠린 분포에 사분위수 규칙(Q3+1.5×IQR)을
+        그대로 대면, 이상치가 아니라 <b>정상적인 긴 이용</b>이 잘려나간다.
+      </p>
+    </div>
+    <div class="figbox">
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--neg)"></span>IQR 규칙이 지우는 양</span>
+        <span class="lg"><span class="sw" style="background:var(--s1)"></span>도메인 규칙이 지우는 양</span>
+      </div>
+      <div id="c9"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lab">이용시간 · IQR 경계</div><div class="val">16.5분 초과</div><div class="sub">1,213건 = 7.2% 삭제 대상</div></div>
+      <div class="stat"><div class="lab">나이 · IQR 경계</div><div class="val">62.5세 초과</div><div class="sub">894건 = 5.3% 삭제 대상</div></div>
+      <div class="stat"><div class="lab">도메인 규칙</div><div class="val" style="color:var(--s1)">58건 = 0.35%</div><div class="sub">20배 이상 보수적</div></div>
+    </div>
+    <p class="note">
+      <b>판단 —</b> 도메인 규칙이 옳다. IQR을 따르면 <b>65세 이상 이용자 전원</b>과 <b>16.5분 넘는 모든 이용</b>이
+      사라지는데, 이는 오류가 아니라 이 서비스의 실제 사용 양상이다.
+      정규분포가 아닌 데이터에 IQR·표준편차 규칙을 쓰기 전에 <b>왜도부터 확인</b>해야 한다.
+    </p>
+  </div>
+
+  <!-- 2-3 이유1 : 충성 고객 분리 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>이유 ①</b><span class="x">·</span><b>분리 분석</b></span>
+      <h3>충성 고객(구독자) 안에도 다른 얼굴이 하나 더 있다</h3>
+      <p class="lede">
+        일회권을 이상치로 지웠다면 4단계의 발견 절반이 사라졌을 것이다. 하지만 분리해 보니
+        더 중요한 게 나왔다 — <b>제자리 반납 468건 중 408건이 구독자</b>다.
+        여가 이용은 일회권만의 특징이 아니다.
+      </p>
+    </div>
+    <div class="tbl-scroll" style="padding-top:22px"><table id="tseg"></table></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">구독자 비중</div><div class="val">98.1%</div><div class="sub">16,469 / 16,786건</div></div>
+      <div class="stat"><div class="lab">구독자 중 여가형</div><div class="val" style="color:var(--s2)">408건</div><div class="sub">제자리 반납 · 전체 왕복의 87%</div></div>
+      <div class="stat"><div class="lab">일회권 커버 정류장</div><div class="val">41 / 50곳</div><div class="sub">구독자는 50곳 전부 사용</div></div>
+    </div>
+    <p class="note">
+      <b>왜 분리해야 했나 —</b> 통합해서 보면 중앙 이용시간 5분, 주말 비중 18.7%로 &lsquo;전형적 통근 서비스&rsquo; 한 문장에서 끝난다.
+      분리하면 <b>세 개의 세그먼트</b>가 나온다. 특히 왕복형 구독자 408건은 중앙 <b>16분</b>(전체의 3.2배),
+      주말 비중 <b>30.9%</b>(전체의 1.65배)로 통근 구독자와 완전히 다르게 행동한다 —
+      최다 출발지도 Newport Pkwy(53건)로 통근 축이 아니다.
+      규모는 작지만 <b>운영이 다르게 대응해야 하는 집단</b>이다.
+    </p>
+    <p class="note flag">
+      <b>단, 일회권의 인구통계는 분석할 수 없다.</b> 317건 중 <b>315건</b>의 Birth Year가 1986으로 동일하다 —
+      회원가입 없는 상품이라 빈칸을 상수로 채운 것이다. 결측이 <b>0으로 집계된 이유</b>가 여기 있다:
+      진짜 빈칸이 아니라 <b>거짓값으로 메워진 빈칸</b>이라 결측 검사에 걸리지 않았다.
+      COUNTBLANK만으로는 품질을 확인할 수 없다는 실례.
+    </p>
+  </div>
+
+  <!-- 2-4 이유2 : 특이 지점 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>이유 ②</b><span class="x">·</span><b>특이 지점 순위</b></span>
+      <h3>특이한 코스는 오류가 아니라 &lsquo;여가 정류장&rsquo;의 지문이다</h3>
+      <p class="lede">
+        평균에서 멀리 떨어진 값을 지우기 전에 <b>어디에 몰려 있는지</b>부터 본다.
+        제자리 반납률로 정류장 순위를 매기면 상위 4곳이 전부 <b>공원·수변</b>이다. 우연이 아니다.
+      </p>
+    </div>
+    <div class="figbox">
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--s2)"></span>제자리 반납률 상위 (여가 신호)</span>
+        <span class="lg"><span class="sw" style="background:var(--axis)"></span>그 외</span>
+        <span class="lg" style="color:var(--muted)">전체 평균 2.8%</span>
+      </div>
+      <div id="c10"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lab">Newport Pkwy 제자리 반납</div><div class="val" style="color:var(--s2)">17.4%</div><div class="sub">전체 평균의 6.2배 (59/339건)</div></div>
+      <div class="stat"><div class="lab">그 59건의 중앙 이용시간</div><div class="val">38분</div><div class="sub">같은 정류장 편도는 9분</div></div>
+      <div class="stat"><div class="lab">특이 종점</div><div class="val" style="color:var(--warn)">14대</div><div class="sub">출발 기록 0회 정류장 5곳</div></div>
+    </div>
+    <p class="note">
+      <b>특이 코스 순위 (30건 이상 경로 기준) —</b>
+      1위 <code>Newport Pkwy → Newport Pkwy</code> 59건 · 중앙 <b>38분</b>,
+      2위 <code>Liberty Light Rail → 제자리</code> 31건 · <b>29분</b>,
+      3위 <code>Grove St PATH → 제자리</code> 31건 · <b>19분</b>.
+      전체 중앙값 5분과 비교하면 <b>4~8배</b>다. 상위 3개가 모두 제자리 반납이라는 사실이,
+      이것이 &lsquo;이동&rsquo;이 아니라 &lsquo;라이딩&rsquo;임을 말해준다.
+    </p>
+    <p class="note">
+      <b>1단계에서 발견한 5개 정류장의 정체 —</b> Warren St &amp; Church St(7), W 45 St &amp; 8 Ave(4),
+      Broadway &amp; W 36 St(1), E 15 St &amp; 3 Ave(1)는 <b>모두 맨해튼 주소</b>이고, JCBS Depot(1)은 정비 창고다.
+      즉 3개월간 <b>13대가 강을 건너가 돌아오지 않았다</b>. 지울 데이터가 아니라 회수할 자산이다.
+    </p>
+    <p class="note">
+      <b>특이 자산 —</b> 자전거 500대 중 최다 이용은 88회, 중앙값 35회다.
+      상위 10%(50대)가 전체의 <b>20.5%</b>를 처리하고, 3개월간 <b>단 1회</b>만 쓰인 자전거가 19대 있다.
+      정류장 편중이 자전거 편마모로 이어지고 있다는 신호.
+    </p>
+    <details><summary>데이터 표 · 특이 지점 순위</summary>
+    <div class="tbl-scroll"><table id="todd"></table></div></details>
+  </div>
+</section>
+
+<!-- ==================== STEP 3 ==================== -->
+<section class="step" id="s3">
+  <div class="step-head">
+    <span class="step-num mono">STEP 03</span>
+    <h2>개별 속성 분석</h2>
+    <p class="goal">
+      변수를 <b>하나씩</b> 본다. 목적은 두 가지 — ① 각 변수의 <b>대표값을 평균으로 쓸지 중앙값으로 쓸지</b> 정하고,
+      ② 4단계에서 관계를 볼 때 <b>어느 변수가 애초에 변동이 없는지</b> 걸러내는 것이다.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>Trip_Duration_in_min</b></span>
+      <h3>82.6%가 10분 안에 끝난다 — 평균 8.6분은 아무도 대표하지 않는다</h3>
+      <p class="lede">
+        왜도 <b>33.7</b>, 첨도 <b>1,328</b>. 최빈 구간은 4~5분인데 최댓값은 1,491분이다.
+        이 분포에서 평균을 대표값으로 쓰면 <b>실제로 존재하지 않는 이용자</b>를 묘사하게 된다.
+      </p>
+    </div>
+    <div class="figbox"><div id="c11"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">중앙값 / 평균</div><div class="val">5분 / 8.6분</div><div class="sub">1.7배 괴리</div></div>
+      <div class="stat"><div class="lab">P95 / P99</div><div class="val">20분 / 43분</div><div class="sub">상위 1%가 평균을 끌어올림</div></div>
+      <div class="stat"><div class="lab">10분 이내</div><div class="val">82.6%</div><div class="sub">13,873건</div></div>
+    </div>
+    <p class="note">
+      <b>이 단계의 결론이 4단계를 지배한다 —</b> 이후 모든 이용시간 비교는 <b>중앙값</b>으로 한다.
+      실제로 일회권과 구독자를 평균으로 비교하면 46.6분 대 7.9분(5.9배)이지만,
+      중앙값으로는 20분 대 5분(4배)이다. 앞의 숫자는 소수의 장시간 이용이 만든 <b>과장</b>이다.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>Start Station Name</b><span class="x">·</span><b>50개</b></span>
+      <h3>정류장의 절반이 통행의 88%를 처리한다</h3>
+      <p class="lede">
+        파레토 곡선이 초반에 가파르게 솟는다. 상위 3곳이 <b>26.2%</b>, 상위 10곳이 <b>53.1%</b>다.
+        이 편중 자체가 5단계 재배치 액션의 출발점이 된다.
+      </p>
+    </div>
+    <div class="figbox"><div id="c12"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">상위 3곳</div><div class="val">26.2%</div><div class="sub">Grove St PATH · Exchange Place · Sip Ave</div></div>
+      <div class="stat"><div class="lab">상위 10곳</div><div class="val">53.1%</div><div class="sub">50곳 중 20%가 절반</div></div>
+      <div class="stat"><div class="lab">하위 21곳</div><div class="val">4.5%</div><div class="sub">통행 200건 미만</div></div>
+    </div>
+    <p class="note">
+      <b>변동이 없어 관계 분석에서 뺀 변수 —</b> <code>Season</code>은 값이 2개(Winter 9,639 / Spring 7,147)뿐이고
+      <code>Month</code>와 완전히 겹친다. <code>Temperature</code>는 <b>9~19°C</b> 범위에 하루 1개 값만 있어
+      실질적으로 &lsquo;날짜의 별칭&rsquo;에 가깝다 — 4단계에서 이 성질이 그대로 문제를 일으킨다.
+    </p>
+    <details><summary>데이터 표 · 나머지 속성 요약</summary>
+    <div class="tbl-scroll"><table id="tuni"></table></div></details>
+  </div>
+</section>
+
+<!-- ==================== STEP 4 ==================== -->
+<section class="step" id="s4">
+  <div class="step-head">
+    <span class="step-num mono">STEP 04</span>
+    <h2>속성 간 관계 분석</h2>
+    <p class="goal">
+      이제야 두 변수를 붙인다. 각 쌍마다 <b>관계가 있는가</b>뿐 아니라 <b>그 관계가 진짜인가</b>(제3의 변수가
+      만든 것은 아닌가)를 함께 확인한다. 1~3단계를 건너뛰면 이 검증을 할 수 없다.
+    </p>
+  </div>
+
+  <!-- R1 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>User Type</b><span class="x">×</span><b>Weekday</b></span>
+      <h3>구독자는 수요일에, 일회권은 토요일에 몰린다</h3>
+      <p class="lede">
+        두 그룹은 같은 요일 축 위에서 정반대로 움직인다. 하나의 서비스 안에 <b>통근 수요</b>와
+        <b>여가 수요</b>가 겹쳐 있다는 뜻이다.
+      </p>
+    </div>
+    <div class="figbox">
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--s1)"></span>Subscriber (구독자)</span>
+        <span class="lg"><span class="sw" style="background:var(--s2)"></span>One-time user (일회권)</span>
+        <span class="lg" style="color:var(--muted)">각 그룹 내 요일별 비중 (%)</span>
+      </div>
+      <div id="c1"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lab">주말 이용 비중</div><div class="val">49.5% <span style="color:var(--muted);font-weight:400">vs</span> 18.1%</div><div class="sub">일회권 · 구독자</div></div>
+      <div class="stat"><div class="lab">일평균 대여</div><div class="val">224건 → 126건</div><div class="sub">주중 → 주말 (44% 감소)</div></div>
+      <div class="stat"><div class="lab">독립성 검정</div><div class="val">χ² = 230.9</div><div class="sub">p &lt; 0.001 · Cramér's V 0.117</div></div>
+    </div>
+    <p class="note">
+      <b>2단계가 없었다면 —</b> 절대 건수는 52배 차이(16,469 vs 317)라 같은 축에 두면 일회권이 보이지 않는다.
+      2단계에서 세그먼트를 분리해뒀기 때문에 <b>각 그룹 내부 비중</b>으로 정규화할 수 있었다.
+      Cramér's V 0.117은 &ldquo;관계는 분명하지만 요일만으로 사용자 유형을 맞힐 수는 없다&rdquo;는 크기다.
+    </p>
+    <details><summary>데이터 표</summary>
+    <div class="tbl-scroll"><table id="t1"></table></div></details>
+  </div>
+
+  <!-- R2 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>User Type</b><span class="x">×</span><b>Trip Duration</b></span>
+      <h3>이용시간은 나이가 아니라 요금제가 가른다</h3>
+      <p class="lede">
+        구독자의 절반 이상이 5분 안에 반납한다. 일회권은 그 구간이 10%뿐이고, 21–30분과 60분 초과에
+        두 번째 봉우리가 생긴다. 이 데이터에서 이용시간을 가장 강하게 설명하는 단일 속성이다.
+      </p>
+    </div>
+    <div class="figbox">
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--s1)"></span>Subscriber</span>
+        <span class="lg"><span class="sw" style="background:var(--s2)"></span>One-time user</span>
+        <span class="lg" style="color:var(--muted)">각 그룹 내 구간별 비중 (%)</span>
+      </div>
+      <div id="c2"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lab">중앙 이용시간</div><div class="val">20분 <span style="color:var(--muted);font-weight:400">vs</span> 5분</div><div class="sub">일회권 · 구독자 (4배)</div></div>
+      <div class="stat"><div class="lab">상위 10% 경계</div><div class="val">77분 <span style="color:var(--muted);font-weight:400">vs</span> 13분</div><div class="sub">P90</div></div>
+      <div class="stat"><div class="lab">제자리 반납 비율</div><div class="val">18.9% <span style="color:var(--muted);font-weight:400">vs</span> 2.5%</div><div class="sub">출발=도착 정류장</div></div>
+    </div>
+    <p class="note">
+      <b>3단계의 결정을 적용한 결과 —</b> 중앙값 기준 4배 차이(20분 vs 5분)가 정확한 표현이다.
+      Mann–Whitney U 검정 p &lt; 10<sup>−100</sup>으로 두 분포는 명백히 다르다.
+      단, 2단계에서 확인했듯 <b>제자리 반납의 87%는 구독자</b>이므로
+      &ldquo;여가 = 일회권&rdquo;이라는 등식으로 넘어가면 안 된다.
+    </p>
+    <details><summary>데이터 표</summary>
+    <div class="tbl-scroll"><table id="t2"></table></div></details>
+  </div>
+
+  <!-- R3 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>Age Groups</b><span class="x">×</span><b>대여량 / 이용시간</b></span>
+      <h3>나이는 &lsquo;얼마나 자주&rsquo;만 설명하고 &lsquo;얼마나 오래&rsquo;는 설명하지 못한다</h3>
+      <p class="lede">
+        왼쪽은 연령대별 대여 건수, 오른쪽은 같은 연령대의 중앙 이용시간이다.
+        왼쪽은 35–44에서 뾰족하게 솟지만 오른쪽은 거의 평평하다.
+      </p>
+    </div>
+    <div class="figbox"><div id="c3"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">주력 연령대</div><div class="val">35–44세</div><div class="sub">전체의 45.8% (7,696건)</div></div>
+      <div class="stat"><div class="lab">25–54세 합계</div><div class="val">86.2%</div><div class="sub">중년 집중</div></div>
+      <div class="stat"><div class="lab">나이 ↔ 이용시간</div><div class="val">ρ = −0.04</div><div class="sub">Spearman · 사실상 무관</div></div>
+    </div>
+    <p class="note flag">
+      <b>워크북 요약의 &ldquo;75세가 가장 오래 탄다&rdquo;는 검증에 실패한다.</b>
+      2단계에서 75세 초과 54건을 제거한 뒤 이 구간에 남은 데이터는 <b>1건</b>이다.
+      표본 1개의 평균은 통계가 아니라 그 한 사람의 기록이다. 18–24세(54건)도 같은 이유로 해석 대상에서 뺀다.
+      판단 가능한 25–74세 구간에서 중앙 이용시간은 <b>5–6분</b>으로 사실상 차이가 없다.
+    </p>
+    <details><summary>데이터 표</summary>
+    <div class="tbl-scroll"><table id="t3"></table></div></details>
+  </div>
+
+  <!-- R4 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>Temperature</b><span class="x">×</span><b>일별 대여량</b></span>
+      <h3>기온과 수요의 상관관계는 가짜다</h3>
+      <p class="lede">
+        전체로 보면 따뜻할수록 많이 탄다(주중 r&nbsp;=&nbsp;0.29). 그런데 <b>같은 달 안에서만</b> 다시 계산하면
+        상관이 사라지거나 뒤집힌다. 기온이 수요를 끌어올린 게 아니라, 둘 다 <b>3월이라서</b> 함께 올라간 것이다.
+      </p>
+    </div>
+    <div class="figbox">
+      <div class="legend">
+        <span class="lg"><span class="sw dot" style="background:var(--s1)"></span>1월</span>
+        <span class="lg"><span class="sw dot" style="background:var(--s2)"></span>2월</span>
+        <span class="lg"><span class="sw dot" style="background:var(--s3)"></span>3월</span>
+        <span class="lg" style="color:var(--muted)">점 하나 = 하루 (86일)</span>
+      </div>
+      <div id="c4"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lab">전체 (주중)</div><div class="val" style="color:var(--s1)">r = +0.29</div><div class="sub">p = 0.021 · 유의해 보임</div></div>
+      <div class="stat"><div class="lab">1월 / 2월 / 3월 각각</div><div class="val">+0.10 / −0.33 / −0.16</div><div class="sub">월 내부에서는 방향조차 불일치</div></div>
+      <div class="stat"><div class="lab">기온 ↔ 월</div><div class="val">ρ = 0.64</div><div class="sub">교란변수 (confounder)</div></div>
+    </div>
+    <p class="note">
+      <b>3단계에서 이미 예고된 함정 —</b> Temperature는 하루에 값이 1개뿐인 <b>날짜의 별칭</b>이었다.
+      그래서 세 색의 점 구름이 <b>세로로</b> 층을 이룬다. 3월(초록)은 기온과 무관하게 통째로 위에,
+      1월(파랑)은 통째로 아래에 있다. 층 <em>사이</em>를 관통하는 기울기가 r&nbsp;=&nbsp;+0.29의 정체이고,
+      각 층 <em>안</em>에는 기울기가 없다.
+    </p>
+    <details><summary>데이터 표 · 월별 요약</summary>
+    <div class="tbl-scroll"><table id="t4"></table></div></details>
+  </div>
+
+  <!-- R5 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>Start Station</b><span class="x">×</span><b>End Station</b></span>
+      <h3>Grove St PATH는 인기 정류장이 아니라 &lsquo;배수구&rsquo;다</h3>
+      <p class="lede">
+        출발과 도착을 각각 세지 않고 <b>차이</b>를 보면 성격이 달라진다. Grove St PATH에는 자전거가 쌓이고,
+        Sip Ave·Hamilton Park·Jersey &amp; 6th는 계속 비어간다.
+      </p>
+    </div>
+    <div class="figbox">
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:var(--s1)"></span>순유입 (자전거가 쌓임)</span>
+        <span class="lg"><span class="sw" style="background:var(--neg)"></span>순유출 (자전거가 마름)</span>
+        <span class="lg" style="color:var(--muted)">총 통행 600건 이상 정류장 23곳</span>
+      </div>
+      <div id="c5"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lab">Grove St PATH 순유입</div><div class="val" style="color:var(--s1)">+642대</div><div class="sub">도착 2,735 − 출발 2,093</div></div>
+      <div class="stat"><div class="lab">2위와의 격차</div><div class="val">6.9배</div><div class="sub">City Hall +93</div></div>
+      <div class="stat"><div class="lab">상위 12개 경로 중</div><div class="val">6개</div><div class="sub">종착지가 Grove St PATH</div></div>
+    </div>
+    <p class="note">
+      <b>주중·주말 모두 같은 방향이다</b> — 주중 +537, 주말 +105.
+      Hamilton Park→Grove St PATH 401건이 최다 경로이고, 이곳은 맨해튼행 PATH 환승역이다.
+      즉 <b>자전거로 역까지, 그다음 지하철로</b>라는 퍼스트마일 통근 패턴이다.
+      대여 시각이 없어 출퇴근 시간대로는 증명할 수 없지만, 요일·경로·이용시간 세 가지가 모두 같은 방향을 가리킨다.
+    </p>
+    <details><summary>데이터 표 · 순유입/순유출</summary>
+    <div class="tbl-scroll"><table id="t5"></table></div></details>
+  </div>
+
+  <!-- R6 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="pair mono"><b>User Type</b><span class="x">×</span><b>Birth Year</b></span>
+      <h3>&ldquo;일회권 사용자는 35–44세&rdquo;라고 쓰면 안 되는 이유</h3>
+      <p class="lede">
+        교차표를 그대로 믿으면 일회권 317명 중 315명이 35–44세다. 거의 완벽한 관계처럼 보인다.
+        2단계에서 확인한 Birth Year 상수 문제가 여기서 결과를 만들어낸다.
+      </p>
+    </div>
+    <div class="figbox"><div id="c6"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="lab">일회권 Birth Year = 1986</div><div class="val" style="color:var(--warn)">315 / 317</div><div class="sub">99.4%</div></div>
+      <div class="stat"><div class="lab">구독자 최빈 연도 비중</div><div class="val">8.0%</div><div class="sub">1986년 · 정상 분포</div></div>
+      <div class="stat"><div class="lab">판정</div><div class="val">기본값 입력</div><div class="sub">실제 연령 아님</div></div>
+    </div>
+    <p class="note flag">
+      <b>User Type × Age 교차분석은 이 데이터로 수행할 수 없다.</b>
+      피벗 테이블은 이 사실을 알려주지 않는다 — <b>2단계에서 원본 컬럼을 열어봤기 때문에</b> 잡힌 것이다.
+      단계를 건너뛰고 4단계로 직행했다면 이 표는 &lsquo;강한 관계&rsquo;로 보고됐을 것이다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== STEP 5 ==================== -->
+<section class="step" id="s5">
+  <div class="step-head">
+    <span class="step-num mono">STEP 05</span>
+    <h2>인사이트 도출 — SO WHAT</h2>
+    <p class="goal">
+      발견을 <b>버티는 결론</b>과 <b>폐기할 결론</b>으로 나누고, 살아남은 것만 실행 항목으로 옮긴다.
+      Level 2의 네 문항에 답하되, 답이 검증을 통과했는지까지 표시했다.
+    </p>
+  </div>
+
+  <ul class="vlist">
+    <li><span class="vtag mono">확인</span><div>
+      <b>이 서비스는 통근 인프라다.</b>
+      <p>구독자 98.1%, 중앙 이용시간 5분, 주말 −44%, 최다 목적지가 PATH 환승역.
+      네 지표가 모두 같은 방향을 가리킨다. <span style="color:var(--muted)">(STEP 3 · 4)</span></p></div></li>
+    <li><span class="vtag mono">확인</span><div>
+      <b>여가 수요는 일회권이 아니라 &lsquo;정류장&rsquo;에 붙어 있다.</b>
+      <p>제자리 반납 468건 중 <b>408건이 구독자</b>이고, 이들의 중앙 이용시간은 16분·주말 비중 30.9%로
+      통근 구독자와 다르다. 여가를 상품(일회권)으로 정의하면 87%를 놓친다 —
+      Newport Pkwy·Liberty Light Rail 같은 <em>장소</em>로 정의해야 한다. <span style="color:var(--muted)">(STEP 2)</span></p></div></li>
+    <li><span class="vtag mono">확인</span><div>
+      <b>재배치는 순위표가 아니라 순유입으로 정한다.</b>
+      <p>Grove St PATH +642 vs Sip Ave −129. 대여 건수 순위만 보면 둘 다 &lsquo;인기 정류장&rsquo;으로 뭉뚱그려진다.
+      <span style="color:var(--muted)">(STEP 4)</span></p></div></li>
+    <li><span class="vtag mono w">기각</span><div>
+      <b>기온 → 수요 인과는 성립하지 않는다.</b>
+      <p>월을 통제하면 상관이 사라진다(+0.10 / −0.33 / −0.16). 원인은 기온이 아니라 계절이다.
+      <span style="color:var(--muted)">(STEP 3에서 예고 → STEP 4에서 확인)</span></p></div></li>
+    <li><span class="vtag mono w">기각</span><div>
+      <b>연령 관련 결론 두 개는 폐기.</b>
+      <p>&lsquo;75세가 가장 오래 탄다&rsquo;는 n=1, &lsquo;일회권은 35–44세&rsquo;는 Birth Year 기본값 1986의 산물이다.
+      <span style="color:var(--muted)">(STEP 2)</span></p></div></li>
+  </ul>
+
+  <div class="routebox">
+    <h4>재배치 루트 설계 (A1)</h4>
+    <p>주중 하루 순증감을 대수로 환산한 값. 회수 1곳, 배분 5곳이면 시스템 불균형의 대부분이 상쇄된다.</p>
+    <div id="c7"></div>
+  </div>
+
+  <div class="acts">
+
+    <article class="act p1">
+      <header><span class="prio mono">즉시 · 운영</span>
+        <h4>주중 1일 1회, 10대 적재 재배치 루트를 신설한다</h4></header>
+      <dl>
+        <div><dt>근거</dt><dd>Grove St PATH에 주중 하루 <em>+8.8대</em>가 순증한다(3개월 누적 +642대). 반대로
+          Jersey &amp; 6th St <em>−2.4</em>, Sip Ave <em>−1.9</em>, Hamilton Park·Oakland Ave·Morris Canal 각 <em>−1.6</em>대/일씩 마른다.
+          5곳 합계 <b>−9.1대/일</b>이 Grove의 잉여와 거의 정확히 맞물린다.</dd></div>
+        <div><dt>실행</dt><dd>Grove St PATH에서 8~9대 + City Hall(+1.2)에서 1~2대 회수 → <b>10대 적재</b> →
+          5개 정류장에 2대씩 배분. 주말은 Grove 순증이 <em>+4.2대/일</em>로 절반이라 격일로 충분하다.</dd></div>
+        <div><dt>성공 지표</dt><dd>1개월 뒤 Grove St PATH 일평균 순증 <b>+8.8 → +2 이하</b>.
+          측정은 지금과 똑같은 출발·도착 카운트 차이로 하면 된다.</dd></div>
+      </dl>
+      <p class="dep">추가 데이터·개발 없이 오늘 계산된 숫자만으로 루트를 확정할 수 있다. 6개 정류장 모두 반경 2km 안이다.</p>
+    </article>
+
+    <article class="act p1">
+      <header><span class="prio mono">즉시 · 데이터</span>
+        <h4>Birth Year 기본값을 없애고, 대여 시각의 시·분을 복원한다</h4></header>
+      <dl>
+        <div><dt>근거</dt><dd>일회권 317건 중 <em>315건</em>의 Birth Year가 1986으로 동일하다.
+          Start Time·Stop Time의 시각은 전량 <b>00:00</b>이다. 이 둘 때문에 Level 2의 네 문항 중
+          두 개(연령×사용자유형, 출퇴근 피크)를 <b>답할 수 없다</b>고 판정해야 했다.</dd></div>
+        <div><dt>실행</dt><dd>① 일회권의 Birth Year·Age·Age Groups는 상수 대신 <b>공백(NULL)</b>으로 적재
+          — 거짓값은 결측 검사를 통과해버린다.
+          ② 대여·반납 시각을 <b>분 단위까지</b> 보존.
+          ③ 정제 규칙을 시트가 아니라 스크립트로 고정(현재 <code>RAW</code> 시트의 25분 절단은 근거 불명).</dd></div>
+        <div><dt>성공 지표</dt><dd>다음 분기 데이터에서 일회권 Age 결측률 <b>100%</b>(= 거짓값 0),
+          시각 고유값 <b>1개 → 1,000개 이상</b>.</dd></div>
+      </dl>
+      <p class="dep">가장 싸고 가장 효과가 큰 항목. 이게 안 되면 다음 분기에도 같은 두 문항에서 막힌다.</p>
+    </article>
+
+    <article class="act p2">
+      <header><span class="prio mono">1개월 · 분석</span>
+        <h4>수요 예측 모델에서 기온 변수를 빼고 요일 × 월로 다시 만든다</h4></header>
+      <dl>
+        <div><dt>근거</dt><dd>기온↔수요 상관은 월을 통제하면 <em>+0.10 / −0.33 / −0.16</em>으로 방향조차 흩어진다.
+          반면 요일은 안정적이다 — 주중 <em>224건/일</em>, 주말 <em>126건/일</em>로 항상 44% 차이가 난다.</dd></div>
+        <div><dt>실행</dt><dd>기준선을 <b>요일 평균 × 월 계수</b>로 잡는다(1월 4,608 → 3월 7,147, <em>1.55배</em>).
+          기온은 예측 변수가 아니라 <b>사후 점검용</b>으로만 남긴다.</dd></div>
+        <div><dt>성공 지표</dt><dd>4~6월 실측치 백테스트에서 요일×월 모델의 오차가 기온 포함 모델보다 작을 것.
+          작지 않다면 기온을 되살릴 근거가 생기므로 어느 쪽이든 결론이 난다.</dd></div>
+      </dl>
+      <p class="dep">이번 데이터의 기온 범위는 <b>9~19°C</b>뿐이다. 0°C 이하·30°C 이상이 포함된 연간 데이터에서는 기온이 다시 유효해질 수 있다 — &lsquo;기온은 무관하다&rsquo;가 아니라 &lsquo;겨울~초봄에는 무관하다&rsquo;가 정확한 결론이다.</p>
+    </article>
+
+    <article class="act p2">
+      <header><span class="prio mono">1개월 · 자산</span>
+        <h4>강 건너로 넘어가 돌아오지 않는 자전거를 회수 대상으로 등록한다</h4></header>
+      <dl>
+        <div><dt>근거</dt><dd>도착 기록만 있고 출발 기록이 <b>0</b>인 정류장 4곳이 모두 맨해튼 주소다 —
+          Warren St &amp; Church St(7), W 45 St &amp; 8 Ave(4), Broadway &amp; W 36 St(1), E 15 St &amp; 3 Ave(1).
+          3개월간 <em>13대</em>가 넘어가 한 번도 돌아오지 않았다.</dd></div>
+        <div><dt>실행</dt><dd>월 1회 크로스-허드슨 회수 일정에 이 4개 지점을 넣거나 관할 밖 반납에 수수료를 건다.
+          분기 <b>15대</b> 규모라 전용 인력 없이 기존 정비 동선에 붙이면 된다.</dd></div>
+        <div><dt>성공 지표</dt><dd>다음 분기 &lsquo;출발 0회&rsquo; 정류장의 도착 건수 합계 <b>13대 → 5대 이하</b>.</dd></div>
+      </dl>
+      <p class="dep">1단계의 &lsquo;출발 50곳 ≠ 도착 55곳&rsquo;에서 시작해 2단계에서 정체가 밝혀진 항목. 구조 확인을 건너뛰었다면 발견되지 않았다.</p>
+    </article>
+
+    <article class="act p3">
+      <header><span class="prio mono">분기 · 상품</span>
+        <h4>여가 수요는 요금제가 아니라 &lsquo;정류장&rsquo; 단위로 공략한다</h4></header>
+      <dl>
+        <div><dt>근거</dt><dd>제자리 반납률 상위 4곳이 전부 공원·수변이다 —
+          Newport Pkwy <em>17.4%</em>, Hilltop <em>11.5%</em>, Liberty Light Rail <em>10.2%</em>, Lincoln Park <em>10.1%</em>
+          (전체 평균 2.8%). Newport Pkwy 왕복 59건의 중앙 이용시간은 <em>38분</em>으로 같은 정류장 편도(9분)의 4.2배다.
+          그리고 이 왕복의 <b>90%가 구독자</b>다.</dd></div>
+        <div><dt>실행</dt><dd>이 4개 정류장에 주말·공휴일 오전 <b>선배치</b>를 걸고, 거치대를 늘린다.
+          일회권 전용 상품이 아니라 <b>구독자에게도 열린</b> 여가 옵션으로 설계한다.
+          한 분기, 4개 정류장 <b>파일럿</b>이다.</dd></div>
+        <div><dt>성공 지표</dt><dd>파일럿 4개 정류장의 제자리 반납 건수와 주말 대여가 대조군 대비 증가.
+          표본이 작으므로 한 분기(약 13주) 이상 모은 뒤 판정한다.</dd></div>
+      </dl>
+      <p class="dep">우선순위를 낮게 둔 이유 — 근거가 <b>468건</b>이다. 이 숫자로 요금 체계를 바꾸면 안 된다. 파일럿의 목적은 매출이 아니라 &lsquo;여가 수요가 실재하는가&rsquo;의 확인이다.</p>
+    </article>
+
+    <article class="act p3">
+      <header><span class="prio mono">분기 · 네트워크</span>
+        <h4>저이용 정류장 21곳의 존치 여부를 판정한다</h4></header>
+      <dl>
+        <div><dt>근거</dt><dd>50개 정류장 중 <b>21곳(42%)</b>이 3개월 통행의 <em>4.5%</em>만 처리한다(1,495건).
+          반대로 상위 3곳이 <em>26.2%</em>를 처리한다. 자전거 500대 중 상위 10%가 전체의 20.5%를 소화하고
+          3개월간 1회만 쓰인 자전거가 19대 있다 — 편중이 자산 편마모로 이어지고 있다.</dd></div>
+        <div><dt>실행</dt><dd><b>3단계 판정</b>: ① 3개월 더 관측해 계절 효과 배제,
+          ② 반경 500m 내 대체 정류장이 있는 곳만 통폐합 후보,
+          ③ 대체가 없는 곳(NJCU 77건, Communipaw &amp; Berry Lane 74건)은 <b>접근성 목적</b>으로 존치 — 이용률로 판정하지 않는다.</dd></div>
+        <div><dt>성공 지표</dt><dd>회수한 거치대를 상위 3개 정류장에 재배치했을 때 &lsquo;만차로 반납 실패&rsquo; 감소.</dd></div>
+      </dl>
+      <p class="dep">겨울(1~3월) 데이터만으로 정류장을 없애는 것은 위험하다. 특히 공원·수변 정류장은 여름에 수요가 뒤집힐 수 있다 — 반드시 여름 데이터를 본 뒤 결정할 것.</p>
+    </article>
+
+  </div>
+</section>
+
+<footer>
+  <p>출처 · <code>1.2 EDA_뉴욕 따릉이_Level2_문제.xlsx</code> → <code>RAW_cleaning_outlier</code> 시트
+  (16,786행 × 17열, 결측 0, 중복 0). 기간 2023-01-01 ~ 2023-03-31, 미국 저지시티 Citi Bike.
+  기온은 일 단위 단일값(86일).</p>
+  <p>방법 · 카이제곱 독립성검정, Mann–Whitney U, Spearman·Pearson 상관, IQR 이상치 판정.
+  이용시간의 왜도가 33.7이므로 대표값은 중앙값을 우선했다.</p>
+  <p>한계 · 사용자 ID가 없어 <b>고객 단위 분석 불가</b>, 대여 시각이 전량 00:00이라 <b>시간대 분석 불가</b>,
+  일회권 Birth Year가 상수라 <b>일회권 연령 분석 불가</b>. 관측 기간이 겨울~초봄 3개월이라
+  계절성 결론은 여름 데이터로 재검증이 필요하다.</p>
+</footer>
+
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const NS="http://www.w3.org/2000/svg";
+const tip=document.getElementById("tip");
+function el(n,a){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function txt(x,y,s,cls,anchor,extra){const t=el("text",Object.assign({x:x,y:y,class:cls||"tick","text-anchor":anchor||"middle"},extra||{}));t.textContent=s;return t;}
+function svg(w,h){return el("svg",{viewBox:"0 0 "+w+" "+h,role:"img"});}
+function bind(node,html,host){
+  node.addEventListener("mouseenter",()=>{tip.innerHTML=html;tip.style.opacity="1";host.classList.add("dim");node.classList.add("on");
+    const t=node.getAttribute("data-t"); if(t)host.querySelectorAll('[data-t="'+t+'"]').forEach(m=>m.classList.add("on"));});
+  node.addEventListener("mousemove",e=>{
+    const r=tip.getBoundingClientRect();
+    let x=e.clientX+14, y=e.clientY-r.height-10;
+    if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;
+    if(y<8)y=e.clientY+18;
+    tip.style.left=x+"px"; tip.style.top=y+"px";});
+  node.addEventListener("mouseleave",()=>{tip.style.opacity="0";host.classList.remove("dim");
+    host.querySelectorAll(".on").forEach(m=>m.classList.remove("on"));});
+}
+const nf=n=>n.toLocaleString("ko-KR");
+function put(mount,s){const d=document.createElement("div");d.className="scrollx";d.appendChild(s);mount.appendChild(d);return d;}
+function cap(mount,html){const p=document.createElement("p");
+  p.style.cssText="margin:12px 0 0;font-size:12.5px;color:var(--muted)";p.innerHTML=html;mount.appendChild(p);}
+function table(id,head,rows,cls){
+  const t=document.getElementById(id); if(!t)return;
+  t.innerHTML="<thead><tr>"+head.map((h,i)=>"<th"+(i&&!(cls&&cls[i])?"":" class='tl'")+">"+h+"</th>").join("")+"</tr></thead><tbody>"+
+    rows.map(r=>"<tr"+(r.hl?" class='hl'":"")+">"+(r.c||r).map((c,i)=>"<td"+(i&&!(cls&&cls[i])?"":" class='tl'")+">"+c+"</td>").join("")+"</tr>").join("")+"</tbody>";
+}
+
+/* ============ generic grouped column chart ============ */
+function grouped(mount,cats,series,opts){
+  const W=720,H=opts.h||300,ML=40,MR=8,MT=14,MB=opts.mb||40;
+  const pw=W-ML-MR, ph=H-MT-MB, max=opts.max;
+  const s=svg(W,H); s.setAttribute("aria-label",opts.label);
+  opts.ticks.forEach(v=>{const y=MT+ph-v/max*ph;
+    s.appendChild(el("line",{x1:ML,x2:W-MR,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(ML-9,y+4,opts.fmtTick(v),"tick tn","end"));});
+  const band=pw/cats.length, gap=6, bw=Math.min(opts.bw||26,(band-gap-10)/series.length);
+  cats.forEach((c,i)=>{
+    const cx=ML+band*(i+.5);
+    const start=cx-(bw*series.length+gap*(series.length-1))/2;
+    series.forEach((se,j)=>{
+      const v=se.data[i], hgt=Math.max(2,v/max*ph), x=start+j*(bw+gap), y=MT+ph-hgt;
+      s.appendChild(el("rect",{x:x,y:y,width:bw,height:hgt,rx:4,fill:"var(--"+se.color+")",class:"mark","data-t":"g"+i}));
+    });
+    s.appendChild(el("rect",{x:ML+band*i,y:MT,width:band,height:ph,class:"hit","data-t":"g"+i}));
+    bind(s.lastChild,"<b>"+c+"</b><br>"+series.map(q=>q.name+" "+opts.fmtTip(q.data[i],i,q)).join("<br>"),s);
+    s.appendChild(txt(cx,H-MB+18,c,"catlab"));
+  });
+  put(mount,s);
+  return s;
+}
+
+/* ============ generic horizontal bar ============ */
+function hbar(mount,rows,opts){
+  const rh=opts.rh||26, MT=24, MB=opts.mb||10, LW=opts.lw||160;
+  const W=720, H=MT+rows.length*rh+MB, ML=LW, MR=opts.mr||56, pw=W-ML-MR, max=opts.max;
+  const s=svg(W,H); s.setAttribute("aria-label",opts.label);
+  (opts.ticks||[]).forEach(v=>{const x=ML+v/max*pw;
+    s.appendChild(el("line",{x1:x,x2:x,y1:MT-6,y2:H-MB,class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(x,MT-12,opts.fmtTick?opts.fmtTick(v):String(v),"tick tn"));});
+  rows.forEach((r,i)=>{
+    const y=MT+i*rh, w=Math.max(2,r.v/max*pw);
+    s.appendChild(el("rect",{x:ML,y:y+3,width:w,height:rh-9,rx:3,fill:r.color||"var(--s1)",class:"mark","data-t":"h"+i}));
+    s.appendChild(txt(ML-10,y+rh/2+1,r.name,"catlab","end",{"data-t":"h"+i}));
+    s.appendChild(txt(ML+w+8,y+rh/2+1,r.lab,"vlab","start"));
+    const h=el("rect",{x:0,y:y,width:W,height:rh,class:"hit","data-t":"h"+i});
+    s.appendChild(h); bind(h,r.tip,s);
+  });
+  put(mount,s);
+  return s;
+}
+
+/* ================= STEP1 : variable table ================= */
+table("tvar",["변수","측정 척도","고유값","비고"],[
+ {c:["Start Time","<span class='chip'>순서형</span>","86","날짜만 · 시각 전량 00:00"],hl:1},
+ ["Stop Time","<span class='chip'>순서형</span>","86","동일"],
+ ["Start Station ID","<span class='chip n'>명목형</span>","50","Name과 1:1"],
+ ["Start Station Name","<span class='chip n'>명목형</span>","50","분석에 사용"],
+ ["End Station ID","<span class='chip n'>명목형</span>","55","Name과 1:1"],
+ {c:["End Station Name","<span class='chip n'>명목형</span>","55","출발보다 5개 많음 ⚠"],hl:1},
+ ["Bike ID","<span class='chip n'>명목형</span>","500","자산 단위"],
+ ["User Type","<span class='chip n'>명목형</span>","2","Subscriber / One-time"],
+ ["Birth Year","<span class='chip'>순서형</span>","54","Age의 원본"],
+ ["Age","<span class='chip d'>이산형</span>","54","Birth Year 파생"],
+ ["Age Groups","<span class='chip'>순서형</span>","7","Age 파생"],
+ ["Trip Duration","<span class='chip d'>이산형</span>","1,758","초 단위 원본"],
+ {c:["Trip_Duration_in_min","<span class='chip d'>이산형</span>","129","분 반올림 · 분석에 사용"],hl:1},
+ ["Month","<span class='chip'>순서형</span>","3","1 / 2 / 3월"],
+ ["Season","<span class='chip n'>명목형</span>","2","Month에 완전 종속"],
+ ["Temperature","<span class='chip d'>이산형</span>","11","일 단위 단일값 (9~19°C)"],
+ ["Weekday","<span class='chip n'>명목형</span>","7","분석에 사용"],
+],[1,1,0,1]);
+
+/* ================= STEP2 : cleaning waterfall (C8) ================= */
+(function(){
+  const W=720,H=250,ML=8,MR=8,MT=34,MB=54;
+  const pw=W-ML-MR, ph=H-MT-MB, max=20400;
+  const s=svg(W,H); s.setAttribute("aria-label","정제 파이프라인 단계별 잔존 행수");
+  const ST=[
+    {n:"원본",v:20400,d:"",c:"var(--seq2)",note:"워크북 0번 시트 기재값"},
+    {n:"중복·빈행 제거",v:16844,d:-3556,c:"var(--seq4)",note:"17열 전체 일치 기준 + 빈 행"},
+    {n:"이상치 제거",v:16786,d:-58,c:"var(--seq6)",note:"1,500분 초과 5건 ∪ 75세 초과 54건"},
+    {n:"RAW 시트",v:16224,d:-562,c:"var(--neg)",note:"25분 초과 537건 + 근거 불명 25건 — 미사용"}
+  ];
+  [0,5000,10000,15000,20000].forEach(v=>{const y=MT+ph-v/max*ph;
+    s.appendChild(el("line",{x1:ML,x2:W-MR,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(ML+2,y-5,v?(v/1000)+"k":"0","tick","start"));});
+  const band=pw/ST.length, bw=Math.min(112,band-46);
+  ST.forEach((t,i)=>{
+    const cx=ML+band*(i+.5), hgt=t.v/max*ph, y=MT+ph-hgt;
+    s.appendChild(el("rect",{x:cx-bw/2,y:y,width:bw,height:hgt,rx:4,fill:t.c,class:"mark","data-t":"w"+i}));
+    s.appendChild(txt(cx,y-9,nf(t.v),"vlab",null,{fill:"var(--ink)","font-weight":"700"}));
+    s.appendChild(txt(cx,H-MB+18,t.n,"catlab"));
+    if(t.d){
+      s.appendChild(txt(cx,H-MB+34,nf(t.d)+"건","tick",null,{fill:i===3?"var(--neg)":"var(--muted)"}));
+      const py=MT+ph-ST[i-1].v/max*ph;
+      s.appendChild(el("line",{x1:cx-band+bw/2,x2:cx-bw/2,y1:py,y2:py,
+        stroke:"var(--axis)","stroke-width":1,"stroke-dasharray":"3 3"}));
+    }
+    s.appendChild(el("rect",{x:ML+band*i,y:MT,width:band,height:ph,class:"hit","data-t":"w"+i}));
+    bind(s.lastChild,"<b>"+t.n+"</b><br>잔존 "+nf(t.v)+"행"+(t.d?"<br>제거 "+nf(-t.d)+"행":"")+"<br>"+t.note,s);
+  });
+  s.appendChild(txt(ML,16,"단계별 잔존 행수","tick","start"));
+  put(document.getElementById("c8"),s);
+  cap(document.getElementById("c8"),"마지막 막대(<b>RAW 시트</b>)는 근거가 문서와 맞지 않아 이 보고서에서 사용하지 않았다.");
+})();
+
+/* ================= STEP2 : IQR vs domain (C9) ================= */
+hbar(document.getElementById("c9"),[
+ {name:"이용시간 · IQR 규칙", v:1213, lab:"1,213건 (7.2%)", color:"var(--neg)",
+  tip:"<b>Q3 + 1.5×IQR = 16.5분</b><br>16.5분 초과 1,213건이 삭제 대상<br>= 전체의 7.2%"},
+ {name:"나이 · IQR 규칙", v:894, lab:"894건 (5.3%)", color:"var(--neg)",
+  tip:"<b>Q3 + 1.5×IQR = 62.5세</b><br>62.5세 초과 894건이 삭제 대상<br>= 65세 이상 이용자 전원"},
+ {name:"실제 적용 · 도메인 규칙", v:58, lab:"58건 (0.35%)", color:"var(--s1)",
+  tip:"<b>1,500분 초과 5건 ∪ 75세 초과 54건</b><br>(중복 1건) = 58건<br>IQR 대비 20배 보수적"}
+],{max:1300, ticks:[0,400,800,1200], rh:44, lw:190, mr:120,
+   fmtTick:v=>nf(v), label:"이상치 판정 기준별 삭제 대상 건수"});
+cap(document.getElementById("c9"),"막대 길이 = 각 기준이 지우자고 판정하는 행 수. 같은 데이터, 같은 &lsquo;이상치&rsquo;라는 이름, 20배 다른 결과.");
+
+/* ================= STEP2 : segment table ================= */
+table("tseg",["세그먼트","건수","비중","중앙 이용시간","P90","주말 비중","사용 정류장"],[
+ ["통근 구독자 <span class='chip'>편도</span>","16,061","95.7%","5분","13분","17.8%","50곳"],
+ {c:["여가 구독자 <span class='chip o'>왕복 · 발견</span>","408","2.4%","16분","42분","30.9%","42곳"],hl:1},
+ {c:["일회권 <span class='chip n'>왕복 18.9%</span>","317","1.9%","20분","77분","49.5%","41곳"],hl:1},
+ {c:["<b>전체</b>","<b>16,786</b>","<b>100%</b>","<b>5분</b>","<b>14분</b>","<b>18.7%</b>","<b>50곳</b>"]},
+],[1,0,0,0,0,0,0]);
+
+/* ================= STEP2 : odd stations (C10) ================= */
+(function(){
+  const D=[["Newport Pkwy",17.4,339,59,1],["Hilltop",11.5,122,14,1],
+           ["Liberty Light Rail",10.2,303,31,1],["Lincoln Park",10.1,119,12,1],
+           ["City Hall",4.2,572,24,0],["JC Medical Center",4.1,222,9,0],
+           ["Essex Light Rail",3.9,383,15,0],["Marin Light Rail",3.9,440,17,0]];
+  const s=hbar(document.getElementById("c10"),D.map(d=>({
+    name:d[0], v:d[1], lab:d[1].toFixed(1)+"%",
+    color:d[4]?"var(--s2)":"var(--axis)",
+    tip:"<b>"+d[0]+"</b><br>출발 "+nf(d[2])+"건 중 제자리 반납 "+d[3]+"건<br>= "+d[1].toFixed(1)+"% (전체 평균 2.8%)"
+  })),{max:19, ticks:[0,5,10,15], rh:27, lw:150, mr:70,
+      fmtTick:v=>v+"%", label:"정류장별 제자리 반납률"});
+  /* 전체 평균 기준선 */
+  const ML=150,pw=720-ML-70, x=ML+2.8/19*pw;
+  s.appendChild(el("line",{x1:x,x2:x,y1:18,y2:24+8*27,stroke:"var(--ink)","stroke-width":1.5,"stroke-dasharray":"5 3"}));
+  s.appendChild(txt(x+6,16,"전체 평균 2.8%","tick","start",{fill:"var(--ink)"}));
+  cap(document.getElementById("c10"),"출발 100건 이상 정류장만. 주황색 4곳은 모두 공원·수변 입지 — 위치가 이용 목적을 결정한다.");
+})();
+
+table("todd",["구분","항목","값","전체 대비"],[
+ {c:["특이 코스","Newport Pkwy → Newport Pkwy (59건)","중앙 38분","7.6배"],hl:1},
+ ["특이 코스","Liberty Light Rail → 제자리 (31건)","중앙 29분","5.8배"],
+ ["특이 코스","Grove St PATH → 제자리 (31건)","중앙 19분","3.8배"],
+ ["특이 코스","Sip Ave → NJCU (30건)","중앙 15분","3.0배"],
+ {c:["특이 정류장","Newport Pkwy 제자리 반납률","17.4%","6.2배"],hl:1},
+ ["특이 정류장","Hilltop 제자리 반납률","11.5%","4.1배"],
+ {c:["특이 종점","출발 기록 0회 정류장 5곳","14대","맨해튼 4곳 + 정비창고"],hl:1},
+ ["특이 자산","최다 이용 자전거 (26256)","88회","중앙값 35회의 2.5배"],
+ ["특이 자산","3개월간 1회만 쓰인 자전거","19대","500대 중 3.8%"],
+ ["특이 자산","상위 10% 자전거(50대) 처리량","20.5%","—"],
+],[1,1,0,0]);
+
+/* ================= STEP3 : duration histogram (C11) ================= */
+(function(){
+  const cats=["≤3","4–5","6–10","11–15","16–20","21–30","31–60","60+"];
+  const n=[3640,5311,4922,1514,611,411,287,90];
+  const pct=[21.68,31.64,29.32,9.02,3.64,2.45,1.71,0.54];
+  const W=720,H=300,ML=44,MR=10,MT=18,MB=48, pw=W-ML-MR, ph=H-MT-MB, max=35;
+  const s=svg(W,H); s.setAttribute("aria-label","이용시간 구간별 분포");
+  [0,10,20,30].forEach(v=>{const y=MT+ph-v/max*ph;
+    s.appendChild(el("line",{x1:ML,x2:W-MR,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(ML-9,y+4,v+"%","tick tn","end"));});
+  const band=pw/cats.length, bw=Math.min(58,band-12);
+  cats.forEach((c,i)=>{
+    const cx=ML+band*(i+.5), hgt=Math.max(2,pct[i]/max*ph), y=MT+ph-hgt;
+    s.appendChild(el("rect",{x:cx-bw/2,y:y,width:bw,height:hgt,rx:4,class:"mark","data-t":"d"+i,
+      fill:i<3?"var(--seq4)":"var(--seq2)"}));
+    if(pct[i]>=3) s.appendChild(txt(cx,y-7,pct[i].toFixed(1)+"%","vlab",null,{fill:"var(--ink2)"}));
+    s.appendChild(txt(cx,H-MB+18,c,"catlab"));
+    s.appendChild(el("rect",{x:ML+band*i,y:MT,width:band,height:ph,class:"hit","data-t":"d"+i}));
+    bind(s.lastChild,"<b>"+c+"분</b><br>"+nf(n[i])+"건 · "+pct[i].toFixed(2)+"%",s);
+  });
+  /* 중앙값 / 평균 표시 */
+  const X=v=>{ /* 구간 경계 근사 위치 */
+    const edge=[0,3,5,10,15,20,30,60,120];
+    for(let i=0;i<8;i++){ if(v<=edge[i+1]) return ML+band*i+band*(v-edge[i])/(edge[i+1]-edge[i]); }
+    return ML+pw; };
+  [[5,"중앙값 5분","var(--ink)"],[8.6,"평균 8.6분","var(--s2)"]].forEach((m,k)=>{
+    const x=X(m[0]);
+    s.appendChild(el("line",{x1:x,x2:x,y1:MT,y2:MT+ph,stroke:m[2],"stroke-width":1.5,"stroke-dasharray":"5 3"}));
+    s.appendChild(txt(x+(k?6:-6),MT+13+k*16,m[1],"tick",k?"start":"end",{fill:m[2]}));
+  });
+  s.appendChild(txt(ML+pw/2,H-MB+38,"이용시간 (분)","tick"));
+  put(document.getElementById("c11"),s);
+  cap(document.getElementById("c11"),"진한 막대 = 10분 이내(82.6%). 평균선이 분포의 오른쪽 꼬리 쪽으로 끌려가 있는 것이 <b>왜도 33.7</b>의 모습이다.");
+})();
+
+/* ================= STEP3 : station pareto (C12) ================= */
+(function(){
+  const VC=[2093,1217,1084,1068,703,650,572,530,510,481,472,470,462,455,440,431,394,388,383,381,339,331,329,303,229,222,197,163,146,134,122,122,119,116,114,91,77,74,68,66,44,43,42,31,25,24,15,11,3,2];
+  const tot=VC.reduce((a,b)=>a+b,0);
+  const W=720,H=290,ML=44,MR=44,MT=18,MB=46, pw=W-ML-MR, ph=H-MT-MB;
+  const s=svg(W,H); s.setAttribute("aria-label","정류장 이용 파레토 곡선");
+  const maxBar=2200;
+  [0,25,50,75,100].forEach(v=>{const y=MT+ph-v/100*ph;
+    s.appendChild(el("line",{x1:ML,x2:W-MR,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(W-MR+8,y+4,v+"%","tick tn","start"));});
+  [0,1000,2000].forEach(v=>s.appendChild(txt(ML-9,MT+ph-v/maxBar*ph+4,v?nf(v):"0","tick tn","end")));
+  const band=pw/VC.length, bw=Math.max(3,band-2.2);
+  let cum=0; const pts=[];
+  VC.forEach((v,i)=>{
+    const cx=ML+band*(i+.5), hgt=Math.max(1,v/maxBar*ph), y=MT+ph-hgt;
+    cum+=v; const cp=cum/tot*100;
+    pts.push([cx, MT+ph-cp/100*ph]);
+    s.appendChild(el("rect",{x:cx-bw/2,y:y,width:bw,height:hgt,rx:1.5,class:"mark","data-t":"p"+i,
+      fill:i<10?"var(--seq4)":"var(--seq2)"}));
+    s.appendChild(el("rect",{x:ML+band*i,y:MT,width:band,height:ph,class:"hit","data-t":"p"+i}));
+    bind(s.lastChild,"<b>"+(i+1)+"위 정류장</b><br>출발 "+nf(v)+"건<br>누적 "+cp.toFixed(1)+"%",s);
+  });
+  s.appendChild(el("path",{d:"M"+pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" L"),
+    fill:"none",stroke:"var(--s2)","stroke-width":2,"stroke-linejoin":"round"}));
+  [[10,53.1],[25,87.7]].forEach(m=>{
+    const p=pts[m[0]-1];
+    s.appendChild(el("circle",{cx:p[0],cy:p[1],r:5,fill:"var(--s2)",stroke:"var(--surface)","stroke-width":2}));
+    s.appendChild(txt(p[0]+10,p[1]-8,"상위 "+m[0]+"곳 "+m[1]+"%","vlab","start",{fill:"var(--ink)"}));
+  });
+  s.appendChild(txt(ML,MT-4,"출발 건수","tick","start"));
+  s.appendChild(txt(W-MR+8,MT-4,"누적","tick","start",{fill:"var(--s2)"}));
+  s.appendChild(txt(ML+pw/2,H-MB+24,"정류장 50곳 (출발 건수 내림차순)","tick"));
+  put(document.getElementById("c12"),s);
+  cap(document.getElementById("c12"),"진한 막대 = 상위 10곳. 주황 선은 누적 점유율(오른쪽 축).");
+})();
+
+table("tuni",["속성","척도","대표값 / 최빈","분포 특징","관계 분석 사용"],[
+ ["Trip_Duration_in_min","이산형","중앙 5분 (평균 8.6)","왜도 33.7 · 극단 우편향","○ 중앙값 기준"],
+ ["Age","이산형","중앙 39세 (평균 41.6)","왜도 0.93 · 35–39세 최빈","○"],
+ ["Age Groups","순서형","35–44 (45.8%)","25–54세에 86.2% 집중","○"],
+ ["User Type","명목형","Subscriber (98.1%)","극단적 불균형 2범주","○ 내부 비중 정규화"],
+ ["Weekday","명목형","Wednesday (3,291)","주중 > 주말 (224 vs 126건/일)","○"],
+ ["Start Station Name","명목형","Grove St PATH (2,093)","상위 10곳 53.1% 집중","○"],
+ ["Bike ID","명목형","중앙 35회 / 500대","상위 10%가 20.5% 처리","△ 자산 분석용"],
+ ["Month","순서형","3월 (7,147)","1→3월 1.55배 증가","○ 통제변수"],
+ ["Temperature","이산형","중앙 15°C","9~19°C · 일 1값","× Month와 교란"],
+ ["Season","명목형","Winter (9,639)","Month에 완전 종속","× 중복"],
+ ["Start Time","순서형","—","시각 전량 00:00","× 정보 없음"],
+],[1,1,1,1,1]);
+
+/* ================= STEP4 charts ================= */
+const D1={cats:["월","화","수","목","금","토","일"],
+  sub:[14.97,14.73,19.75,17.75,14.66,9.03,9.11],
+  ot:[16.40,7.57,12.30,5.99,8.20,29.34,20.19],
+  subN:[2466,2426,3252,2924,2414,1487,1500], otN:[52,24,39,19,26,93,64]};
+grouped(document.getElementById("c1"),D1.cats,
+  [{name:"구독자",color:"s1",data:D1.sub},{name:"일회권",color:"s2",data:D1.ot}],
+  {max:30,ticks:[0,10,20,30],h:300,bw:24,label:"요일별 사용자 유형 비중",
+   fmtTick:v=>v+"%",
+   fmtTip:(v,i,q)=>v.toFixed(1)+"% ("+nf(q.name==="구독자"?D1.subN[i]:D1.otN[i])+"건)"});
+
+const D2={cats:["1–5","6–10","11–15","16–20","21–30","31–45","46–60","60+"],
+  sub:[54.16,29.58,8.91,3.49,2.06,1.26,0.26,0.28],
+  ot:[10.09,15.77,14.51,11.36,22.40,8.52,3.47,13.88]};
+grouped(document.getElementById("c2"),D2.cats,
+  [{name:"구독자",color:"s1",data:D2.sub},{name:"일회권",color:"s2",data:D2.ot}],
+  {max:60,ticks:[0,20,40,60],h:300,bw:22,mb:46,label:"이용시간 구간별 분포",
+   fmtTick:v=>v+"%", fmtTip:v=>v.toFixed(1)+"%"});
+document.querySelector("#c2 svg").appendChild(txt(360,296,"이용시간 (분)","tick"));
+
+(function(){
+  const cats=["18–24","25–34","35–44","45–54","55–64","65–74","75+"];
+  const cnt=[54,4001,7696,2972,1447,615,1], med=[10,6,5,5,6,6,8];
+  const thin=[0,6];
+  const W=720,H=280,PAD=26,pwid=(W-PAD)/2,ML=44,MT=30,MB=48,MR=6;
+  const s=svg(W,H); s.setAttribute("aria-label","연령대별 대여 건수와 중앙 이용시간");
+  function panel(x0,title,vals,max,ticks,fmt,seq){
+    const pw=pwid-ML-MR, ph=H-MT-MB;
+    s.appendChild(txt(x0+ML,16,title,"catlab","start",{"font-weight":"650"}));
+    ticks.forEach(v=>{const y=MT+ph-v/max*ph;
+      s.appendChild(el("line",{x1:x0+ML,x2:x0+ML+pw,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
+      s.appendChild(txt(x0+ML-8,y+4,fmt(v),"tick tn","end"));});
+    const band=pw/cats.length,bw=Math.min(30,band-9);
+    cats.forEach((c,i)=>{
+      const cx=x0+ML+band*(i+.5), hgt=Math.max(2,vals[i]/max*ph), y=MT+ph-hgt;
+      const faded=thin.indexOf(i)>=0;
+      s.appendChild(el("rect",{x:cx-bw/2,y:y,width:bw,height:hgt,rx:4,class:"mark",
+        fill:faded?"var(--axis)":seq,"data-t":"a"+i}));
+      s.appendChild(el("rect",{x:cx-band/2,y:MT,width:band,height:ph,class:"hit","data-t":"a"+i}));
+      bind(s.lastChild,"<b>"+c+"세</b><br>대여 "+nf(cnt[i])+"건<br>중앙 이용시간 "+med[i]+"분"+
+        (faded?"<br><span style='opacity:.7'>표본 부족 — 해석 제외</span>":""),s);
+      s.appendChild(txt(cx,MT+ph+17,c,"tick",null,{transform:"rotate(-38 "+cx+" "+(MT+ph+17)+")"}));
+    });
+  }
+  panel(0,"대여 건수",cnt,8000,[0,4000,8000],v=>v?(v/1000)+"k":"0","var(--s1)");
+  panel(pwid+PAD,"중앙 이용시간 (분)",med,12,[0,4,8,12],v=>String(v),"var(--seq4)");
+  put(document.getElementById("c3"),s);
+  cap(document.getElementById("c3"),"회색 막대 = 표본 100건 미만(18–24세 54건, 75+ 1건) — 값은 있지만 해석하면 안 되는 구간.");
+})();
+
+(function(){
+  const DAILY=[[10,97,1,1],[12,44,1,0],[11,118,1,0],[12,221,1,0],[14,182,1,0],[13,152,1,0],[14,28,1,1],[16,35,1,1],[16,110,1,0],[13,151,1,0],[15,190,1,0],[14,240,1,0],[12,213,1,0],[13,88,1,1],[14,90,1,1],[14,161,1,0],[12,146,1,0],[12,196,1,0],[14,227,1,0],[13,195,1,0],[12,144,1,1],[12,115,1,1],[13,94,1,0],[9,93,1,0],[10,240,1,0],[10,215,1,0],[12,208,1,0],[13,112,1,1],[15,117,1,1],[17,204,1,0],[15,182,1,0],[13,216,2,0],[14,196,2,0],[14,211,2,0],[15,122,2,1],[14,120,2,1],[13,227,2,0],[16,187,2,0],[17,261,2,0],[15,16,2,0],[16,79,2,1],[14,22,2,1],[16,119,2,0],[15,182,2,0],[16,183,2,0],[15,191,2,0],[15,171,2,0],[13,172,2,1],[13,224,2,1],[14,214,2,0],[17,239,2,0],[15,267,2,0],[13,235,2,0],[11,273,2,0],[11,230,2,1],[12,164,2,1],[12,247,2,0],[13,263,2,0],[14,449,3,0],[17,374,3,0],[18,364,3,0],[16,153,3,1],[14,184,3,1],[12,362,3,0],[14,309,3,0],[18,445,3,0],[19,411,3,0],[19,193,3,0],[19,156,3,1],[16,145,3,1],[17,279,3,0],[17,1,3,0],[17,17,3,1],[17,63,3,1],[16,204,3,0],[16,374,3,0],[16,258,3,0],[16,297,3,0],[15,344,3,0],[16,279,3,1],[16,188,3,1],[16,253,3,0],[18,206,3,0],[19,365,3,0],[18,375,3,0],[18,99,3,0]];
+  const W=720,H=340,ML=48,MR=14,MT=16,MB=46, pw=W-ML-MR, ph=H-MT-MB;
+  const x0=8.2,x1=19.8,y1=470;
+  const X=v=>ML+(v-x0)/(x1-x0)*pw, Y=v=>MT+ph-v/y1*ph;
+  const s=svg(W,H); s.setAttribute("aria-label","일평균 기온과 일별 대여 건수 산점도");
+  [0,100,200,300,400].forEach(v=>{
+    s.appendChild(el("line",{x1:ML,x2:W-MR,y1:Y(v),y2:Y(v),class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(ML-9,Y(v)+4,String(v),"tick tn","end"));});
+  for(let t=9;t<=19;t++) s.appendChild(txt(X(t),H-MB+19,String(t),"tick tn"));
+  s.appendChild(txt(ML+pw/2,H-MB+38,"일평균 기온 (°C)","tick"));
+  s.appendChild(txt(ML-9,MT-4,"건/일","tick","end"));
+  const col={1:"var(--s1)",2:"var(--s2)",3:"var(--s3)"};
+  const seen={};
+  DAILY.forEach(d=>{
+    const k=d[0]+"_"+Math.round(d[1]/12); seen[k]=(seen[k]||0)+1;
+    const off=((seen[k]-1)%5-2)*4.4;
+    const cx=X(d[0])+off, cy=Y(d[1]);
+    s.appendChild(el("circle",{cx:cx,cy:cy,r:5,fill:col[d[2]],class:"mark",
+      stroke:"var(--surface)","stroke-width":2,"fill-opacity":d[3]?0.42:0.95}));
+    const h=el("circle",{cx:cx,cy:cy,r:10,class:"hit"});
+    s.appendChild(h);
+    bind(h,"<b>"+d[2]+"월 "+(d[3]?"주말":"주중")+"</b><br>"+d[0]+"°C · "+nf(d[1])+"건",s);
+  });
+  put(document.getElementById("c4"),s);
+  cap(document.getElementById("c4"),"옅은 점 = 주말. 같은 기온의 날이 겹치지 않도록 가로로 미세하게 흩뿌렸다(값은 정수 °C).");
+})();
+
+const FLOW=[["Grove St PATH",642,2735,2093],["City Hall",93,665,572],["Essex Light Rail",74,457,383],["Liberty Light Rail",60,363,303],["Warren St",38,519,481],["Newport Pkwy",37,376,339],["Paulus Hook",37,468,431],["Newport PATH",33,683,650],["Exchange Place",27,1244,1217],["Columbus Drive",23,352,329],["Brunswick & 6th",9,403,394],["Newark Ave",-5,505,510],["Marin Light Rail",-8,432,440],["Brunswick St",-53,419,472],["Jersey & 3rd",-56,399,455],["Monmouth and 6th",-59,329,388],["Van Vorst Park",-100,430,530],["McGinley Square",-106,275,381],["Morris Canal",-115,588,703],["Hamilton Park",-119,949,1068],["Dixon Mills",-122,348,470],["Sip Ave",-129,955,1084],["Jersey & 6th St",-163,299,462]];
+(function(){
+  const rows=FLOW.length, rh=21, MT=26, MB=8, LW=150;
+  const W=720,H=MT+rows*rh+MB, ML=LW, MR=54, pw=W-ML-MR;
+  const negMax=200, max=700, span=negMax+max, Z=ML+negMax/span*pw;
+  const s=svg(W,H); s.setAttribute("aria-label","정류장별 순유입 순유출");
+  [-200,-100,0,100,300,500,700].forEach(v=>{
+    const x=ML+(v+negMax)/span*pw;
+    s.appendChild(el("line",{x1:x,x2:x,y1:MT-6,y2:H-MB,class:v===0?"baseline":"gridline"}));
+    s.appendChild(txt(x,MT-12,(v>0?"+":"")+v,"tick tn"));});
+  FLOW.forEach((f,i)=>{
+    const y=MT+i*rh, v=f[1], pos=v>=0;
+    const x=pos?Z:ML+(v+negMax)/span*pw, w=Math.max(2,Math.abs(v)/span*pw);
+    s.appendChild(el("rect",{x:pos?Z+1:x,y:y+3,width:w,height:rh-8,rx:3,class:"mark",
+      fill:pos?"var(--s1)":"var(--neg)","data-t":"f"+i}));
+    s.appendChild(txt(ML-10,y+rh/2+1,f[0],"catlab","end",{"data-t":"f"+i}));
+    s.appendChild(txt(pos?Z+w+7:x-7,y+rh/2+1,(pos?"+":"")+nf(v),"vlab",pos?"start":"end"));
+    const h=el("rect",{x:0,y:y,width:W,height:rh,class:"hit","data-t":"f"+i});
+    s.appendChild(h);
+    bind(h,"<b>"+f[0]+"</b><br>도착 "+nf(f[2])+" − 출발 "+nf(f[3])+"<br>순증감 <b>"+(v>=0?"+":"")+nf(v)+"대</b>",s);
+  });
+  put(document.getElementById("c5"),s);
+})();
+
+(function(){
+  const W=720,H=190,ML=8,MT=34,MR=8,pw=W-ML-MR;
+  const s=svg(W,H); s.setAttribute("aria-label","사용자 유형별 최빈 출생연도 집중도");
+  const rows=[["일회권 (317명)",99.4,"var(--warn)","1986년생 315명"],
+              ["구독자 (16,469명)",8.0,"var(--s1)","1986년생 1,318명 · 최빈"]];
+  rows.forEach((r,i)=>{
+    const y=MT+i*72;
+    s.appendChild(txt(ML,y-8,r[0],"catlab","start",{"font-weight":"650",fill:"var(--ink)"}));
+    s.appendChild(el("rect",{x:ML,y:y,width:pw,height:26,rx:3,fill:"var(--grid)"}));
+    s.appendChild(el("rect",{x:ML,y:y,width:Math.max(3,pw*r[1]/100),height:26,rx:3,fill:r[2],class:"mark"}));
+    const lx=ML+pw*r[1]/100;
+    s.appendChild(txt(r[1]>50?lx-10:lx+10,y+18,r[1].toFixed(1)+"%","vlab",r[1]>50?"end":"start",
+      r[1]>50?{fill:"#1a1a19"}:{fill:"var(--ink)"}));
+    s.appendChild(txt(ML,y+44,r[3],"tick","start"));
+    const h=el("rect",{x:ML,y:y-4,width:pw,height:34,class:"hit"});
+    s.appendChild(h); bind(h,"<b>"+r[0]+"</b><br>최빈 출생연도 점유율 "+r[1].toFixed(1)+"%<br>"+r[3],s);
+  });
+  s.appendChild(txt(ML,H-6,"가로 막대 = 해당 그룹에서 가장 흔한 출생연도 하나가 차지하는 비율","tick","start"));
+  put(document.getElementById("c6"),s);
+})();
+
+/* ================= STEP5 : rebalancing route (C7) ================= */
+(function(){
+  const W=720,H=278;
+  const s=svg(W,H); s.setAttribute("aria-label","재배치 루트: Grove St PATH 회수 후 5개 정류장 배분");
+  const SRC=[["Grove St PATH",8.8,86,44],["City Hall",1.2,144,32]];
+  const TGT=[["Jersey & 6th St",2.4],["Sip Ave",1.9],["Hamilton Park",1.6],["Oakland Ave",1.6],["Morris Canal",1.6]];
+  const HX=272,HY=98,HW=112,HH=62, TX=512, TW=194, TH=32, T0=24, TS=46;
+  s.appendChild(txt(14,14,"회수","tick","start"));
+  s.appendChild(txt(HX,14,"적재","tick","start"));
+  s.appendChild(txt(TX,14,"배분","tick","start"));
+  SRC.forEach(f=>{
+    const y=f[2]+f[3]/2, w=Math.max(3,f[1]*2.4);
+    s.appendChild(el("path",{d:"M164,"+y+" C 210,"+y+" 226,"+(HY+HH/2)+" "+HX+","+(HY+HH/2),
+      fill:"none",stroke:"var(--s1)","stroke-width":w,"stroke-opacity":.28,"stroke-linecap":"round"}));
+  });
+  TGT.forEach((t,i)=>{
+    const y=T0+i*TS+TH/2, w=Math.max(3,t[1]*2.4);
+    s.appendChild(el("path",{d:"M"+(HX+HW)+","+(HY+HH/2)+" C "+(HX+HW+58)+","+(HY+HH/2)+" "+(TX-58)+","+y+" "+TX+","+y,
+      fill:"none",stroke:"var(--neg)","stroke-width":w,"stroke-opacity":.3,"stroke-linecap":"round",
+      "data-t":"r"+i,class:"mark"}));
+  });
+  SRC.forEach(f=>{
+    s.appendChild(el("rect",{x:14,y:f[2],width:150,height:f[3],rx:3,fill:"var(--surface)",
+      stroke:"var(--s1)","stroke-width":1.5}));
+    s.appendChild(el("rect",{x:14,y:f[2],width:4,height:f[3],fill:"var(--s1)"}));
+    s.appendChild(txt(28,f[2]+(f[3]>40?18:20),f[0],"catlab","start",{"font-weight":"650",fill:"var(--ink)"}));
+    s.appendChild(txt(152,f[2]+(f[3]>40?34:20),"+"+f[1].toFixed(1),"vlab","end",{fill:"var(--ink)"}));
+  });
+  s.appendChild(el("rect",{x:HX,y:HY,width:HW,height:HH,rx:3,fill:"none",
+    stroke:"var(--ink)","stroke-width":1.5,"stroke-dasharray":"4 3"}));
+  s.appendChild(txt(HX+HW/2,HY+26,"10대 적재","catlab",null,{"font-weight":"700",fill:"var(--ink)"}));
+  s.appendChild(txt(HX+HW/2,HY+44,"주중 1일 1회","tick"));
+  TGT.forEach((t,i)=>{
+    const y=T0+i*TS;
+    s.appendChild(el("rect",{x:TX,y:y,width:TW,height:TH,rx:3,fill:"var(--surface)",
+      stroke:"var(--neg)","stroke-width":1.5,class:"mark","data-t":"r"+i}));
+    s.appendChild(el("rect",{x:TX,y:y,width:4,height:TH,fill:"var(--neg)"}));
+    s.appendChild(txt(TX+14,y+20,t[0],"catlab","start",{"font-weight":"650",fill:"var(--ink)"}));
+    s.appendChild(txt(TX+TW-12,y+20,"−"+t[1].toFixed(1),"vlab","end",{fill:"var(--ink)"}));
+    const h=el("rect",{x:HX,y:y-6,width:W-HX,height:TH+12,class:"hit","data-t":"r"+i});
+    s.appendChild(h);
+    bind(h,"<b>"+t[0]+"</b><br>주중 하루 "+t[1].toFixed(1)+"대 순유출<br>→ 하루 2대 보충 권장",s);
+  });
+  s.appendChild(txt(14,H-6,"단위: 대/주중일 · 3개월 실측 순증감(도착−출발)을 주중 61일로 나눈 값","tick","start"));
+  put(document.getElementById("c7"),s);
+})();
+
+/* ================= STEP4 tables ================= */
+table("t1",["요일","구독자 건수","구독자 %","일회권 건수","일회권 %"],
+  D1.cats.map((c,i)=>[c,nf(D1.subN[i]),D1.sub[i].toFixed(2),nf(D1.otN[i]),D1.ot[i].toFixed(2)]));
+table("t2",["이용시간(분)","구독자 %","일회권 %"],
+  D2.cats.map((c,i)=>[c,D2.sub[i].toFixed(2),D2.ot[i].toFixed(2)]));
+table("t3",["연령대","대여 건수","비중 %","중앙 이용시간","평균 이용시간"],
+  [["18–24","54","0.32","10분","11.98분"],["25–34","4,001","23.83","6분","8.26분"],
+   ["35–44","7,696","45.85","5분","9.06분"],["45–54","2,972","17.70","5분","7.71분"],
+   ["55–64","1,447","8.62","6분","9.39분"],["65–74","615","3.66","6분","7.42분"],
+   ["75+","1","0.01","8분","8.00분"]]);
+table("t4",["월","대여 건수","평균 기온","중앙 이용시간","기온↔수요 r (주중)"],
+  [["1월","4,608","12.9°C","5분","+0.10 (n=22)"],["2월","5,031","14.0°C","5분","−0.33 (n=19)"],
+   ["3월","7,147","16.5°C","5분","−0.16 (n=20)"],["전체","16,786","14.8°C","5분","+0.29 (n=61)"]]);
+table("t5",["정류장","도착","출발","순증감"],
+  FLOW.map(f=>[f[0],nf(f[2]),nf(f[3]),(f[1]>=0?"+":"")+nf(f[1])]));
+})();
+</script>
+
+</body>
+</html>
