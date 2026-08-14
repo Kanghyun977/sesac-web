@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="뉴욕 Citi Bike 16,786건을 구조 확인 → 품질·이상치 → 단변량 → 관계 → 인사이트의 표준 EDA 5단계로 분석한 보고서.">
+<meta name="description" content="뉴욕 Citi Bike 16,786건에서 통근 수요와 여가 수요를 갈라낸 EDA 5단계 보고서.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚲</text></svg>">
 <title>뉴욕 따릉이 EDA 5단계</title>
 <style>
@@ -57,17 +57,15 @@ h1{margin:0; font-size:clamp(28px,4.8vw,46px); font-weight:800;
   letter-spacing:-.028em; line-height:1.08; text-wrap:balance}
 .dek{margin:16px 0 0; max-width:62ch; color:var(--ink2); font-size:16px}
 
-/* ---------- toc ---------- */
-.toc{display:flex; flex-wrap:wrap; margin:0; padding:0; list-style:none;
-  border-bottom:1px solid var(--border)}
-.toc li{flex:1 1 165px; border-left:1px solid var(--border)}
-.toc li:first-child{border-left:0}
-.toc a{display:block; padding:16px 14px 18px; text-decoration:none; color:inherit}
-.toc a:hover{background:var(--sunk)}
-.toc .n{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px;
-  letter-spacing:.1em; color:var(--muted); display:block}
-.toc .t{font-size:14px; font-weight:650; margin-top:4px; display:block; letter-spacing:-.01em}
-.toc li:first-child a{padding-left:0}
+/* ---------- takeaway rail ---------- */
+.takeaway{
+  margin:0 0 18px; padding:11px 0 11px 15px; border-left:3px solid var(--s2);
+  font-size:15px; font-weight:650; line-height:1.5; color:var(--ink);
+  letter-spacing:-.012em; text-wrap:balance;
+}
+.takeaway em{font-style:normal; font-variant-numeric:tabular-nums; color:var(--s2)}
+.takeaway span{display:block; font-size:13px; font-weight:450; color:var(--muted);
+  margin-top:3px; letter-spacing:0}
 
 /* ---------- step header ---------- */
 .step{margin-top:56px; scroll-margin-top:16px}
@@ -224,21 +222,12 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
 <div class="wrap">
 
 <header class="mast">
-  <p class="kicker">EDA Level 2 · NY Citi Bike · 2023 Q1 · Jersey City</p>
-  <h1>구조 → 품질 → 단변량 → 관계 → SO WHAT</h1>
+  <h1>5분짜리 통근,<br>38분짜리 산책</h1>
   <p class="dek">
-    공유자전거 16,786건을 표준 EDA 5단계로 통과시켰다. 각 단계는 <b>다음 단계에서 무엇을 믿어도 되는지</b>를
-    확정하기 위해 존재한다 — 구조를 모르면 품질을 못 보고, 품질을 모르면 관계가 전부 가짜일 수 있다.
+    같은 자전거, 같은 도시, 완전히 다른 두 수요.
+    16,786건을 5단계로 갈라 <b>확인한 것</b>과 <b>기각한 것</b>.
   </p>
 </header>
-
-<ol class="toc">
-  <li><a href="#s1"><span class="n">STEP 01</span><span class="t">데이터 구조 확인</span></a></li>
-  <li><a href="#s2"><span class="n">STEP 02</span><span class="t">데이터 퀄리티 · 이상치</span></a></li>
-  <li><a href="#s3"><span class="n">STEP 03</span><span class="t">개별 속성 분석</span></a></li>
-  <li><a href="#s4"><span class="n">STEP 04</span><span class="t">속성 간 관계 분석</span></a></li>
-  <li><a href="#s5"><span class="n">STEP 05</span><span class="t">인사이트 · SO WHAT</span></a></li>
-</ol>
 
 <!-- ==================== STEP 1 ==================== -->
 <section class="step" id="s1">
@@ -309,7 +298,8 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
         마지막 하나는 근거가 문서와 맞지 않는다.
       </p>
     </div>
-    <div class="figbox"><div id="c8"></div></div>
+    <div class="figbox"><p class="takeaway">원본의 <em>17.7%</em>가 중복·빈행이었고, 진짜 이상치는 <em>0.35%</em>뿐이었다.<span>막대 높이 = 각 단계 후 남은 행 수. 빨간 막대는 근거 불명이라 사용하지 않았다.</span></p>
+      <div id="c8"></div></div>
     <div class="stats">
       <div class="stat"><div class="lab">결측 셀</div><div class="val" style="color:var(--good)">0개</div><div class="sub">17열 × 16,786행 전수</div></div>
       <div class="stat"><div class="lab">이상치 제거</div><div class="val">58건 (0.35%)</div><div class="sub">도메인 규칙 기준</div></div>
@@ -340,11 +330,12 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
       </p>
     </div>
     <div class="figbox">
+      <p class="takeaway">IQR을 그대로 쓰면 <em>20배</em> 더 지운다 — 삭제 대상 1,213건 vs 58건.<span>막대 길이 = 각 기준이 &ldquo;이상치&rdquo;라고 판정하는 행 수.</span></p>
       <div class="legend">
         <span class="lg"><span class="sw" style="background:var(--neg)"></span>IQR 규칙이 지우는 양</span>
         <span class="lg"><span class="sw" style="background:var(--s1)"></span>도메인 규칙이 지우는 양</span>
       </div>
-      <div id="c9"></div>
+            <div id="c9"></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="lab">이용시간 · IQR 경계</div><div class="val">16.5분 초과</div><div class="sub">1,213건 = 7.2% 삭제 대상</div></div>
@@ -401,12 +392,13 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
       </p>
     </div>
     <div class="figbox">
+      <p class="takeaway">제자리 반납률 상위 4곳은 전부 공원·수변이다 — 평균의 <em>4~6배</em>.<span>막대 길이 = 빌린 정류장에 그대로 반납한 비율. 점선이 전체 평균 2.8%.</span></p>
       <div class="legend">
         <span class="lg"><span class="sw" style="background:var(--s2)"></span>제자리 반납률 상위 (여가 신호)</span>
         <span class="lg"><span class="sw" style="background:var(--axis)"></span>그 외</span>
         <span class="lg" style="color:var(--muted)">전체 평균 2.8%</span>
       </div>
-      <div id="c10"></div>
+            <div id="c10"></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="lab">Newport Pkwy 제자리 반납</div><div class="val" style="color:var(--s2)">17.4%</div><div class="sub">전체 평균의 6.2배 (59/339건)</div></div>
@@ -456,7 +448,8 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
         이 분포에서 평균을 대표값으로 쓰면 <b>실제로 존재하지 않는 이용자</b>를 묘사하게 된다.
       </p>
     </div>
-    <div class="figbox"><div id="c11"></div></div>
+    <div class="figbox"><p class="takeaway"><em>82.6%</em>가 10분 안에 끝난다 — 평균 8.6분은 아무도 대표하지 않는다.<span>막대 높이 = 해당 구간의 비중. 검은 선이 중앙값, 주황 선이 평균.</span></p>
+      <div id="c11"></div></div>
     <div class="stats">
       <div class="stat"><div class="lab">중앙값 / 평균</div><div class="val">5분 / 8.6분</div><div class="sub">1.7배 괴리</div></div>
       <div class="stat"><div class="lab">P95 / P99</div><div class="val">20분 / 43분</div><div class="sub">상위 1%가 평균을 끌어올림</div></div>
@@ -478,7 +471,8 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
         이 편중 자체가 5단계 재배치 액션의 출발점이 된다.
       </p>
     </div>
-    <div class="figbox"><div id="c12"></div></div>
+    <div class="figbox"><p class="takeaway">정류장 <em>10곳</em>이 전체 통행의 <em>절반</em>을 처리한다.<span>막대 = 정류장별 출발 건수(왼쪽 축), 주황 선 = 누적 점유율(오른쪽 축).</span></p>
+      <div id="c12"></div></div>
     <div class="stats">
       <div class="stat"><div class="lab">상위 3곳</div><div class="val">26.2%</div><div class="sub">Grove St PATH · Exchange Place · Sip Ave</div></div>
       <div class="stat"><div class="lab">상위 10곳</div><div class="val">53.1%</div><div class="sub">50곳 중 20%가 절반</div></div>
@@ -516,12 +510,13 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
       </p>
     </div>
     <div class="figbox">
+      <p class="takeaway">구독자는 수요일에 솟고, 일회권은 토요일에 솟는다 — 봉우리가 정반대다.<span>막대 높이 = 각 그룹이 그 요일에 쓴 비중. 회색 배경이 주말.</span></p>
       <div class="legend">
         <span class="lg"><span class="sw" style="background:var(--s1)"></span>Subscriber (구독자)</span>
         <span class="lg"><span class="sw" style="background:var(--s2)"></span>One-time user (일회권)</span>
         <span class="lg" style="color:var(--muted)">각 그룹 내 요일별 비중 (%)</span>
       </div>
-      <div id="c1"></div>
+            <div id="c1"></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="lab">주말 이용 비중</div><div class="val">49.5% <span style="color:var(--muted);font-weight:400">vs</span> 18.1%</div><div class="sub">일회권 · 구독자</div></div>
@@ -548,12 +543,13 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
       </p>
     </div>
     <div class="figbox">
+      <p class="takeaway">구독자의 <em>54%</em>는 5분 안에 반납하고, 일회권의 <em>60%</em>는 16분을 넘긴다.<span>막대 높이 = 각 그룹 내부에서 그 구간이 차지하는 비중.</span></p>
       <div class="legend">
         <span class="lg"><span class="sw" style="background:var(--s1)"></span>Subscriber</span>
         <span class="lg"><span class="sw" style="background:var(--s2)"></span>One-time user</span>
         <span class="lg" style="color:var(--muted)">각 그룹 내 구간별 비중 (%)</span>
       </div>
-      <div id="c2"></div>
+            <div id="c2"></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="lab">중앙 이용시간</div><div class="val">20분 <span style="color:var(--muted);font-weight:400">vs</span> 5분</div><div class="sub">일회권 · 구독자 (4배)</div></div>
@@ -580,7 +576,8 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
         왼쪽은 35–44에서 뾰족하게 솟지만 오른쪽은 거의 평평하다.
       </p>
     </div>
-    <div class="figbox"><div id="c3"></div></div>
+    <div class="figbox"><p class="takeaway">왼쪽은 뾰족하고 오른쪽은 평평하다 — 나이는 횟수만 설명한다.<span>같은 연령대를 두 지표로 나란히 본 것. 오른쪽 점선이 전체 중앙값 5분.</span></p>
+      <div id="c3"></div></div>
     <div class="stats">
       <div class="stat"><div class="lab">주력 연령대</div><div class="val">35–44세</div><div class="sub">전체의 45.8% (7,696건)</div></div>
       <div class="stat"><div class="lab">25–54세 합계</div><div class="val">86.2%</div><div class="sub">중년 집중</div></div>
@@ -607,13 +604,14 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
       </p>
     </div>
     <div class="figbox">
+      <p class="takeaway">점 구름이 <em>세로로</em> 층져 있다 — 기울기는 층 사이에만 있고 층 안에는 없다.<span>점 하나 = 하루. 가로 점선이 그 달의 평균 대여량 — 세 선의 간격이 곧 &lsquo;층&rsquo;이다.</span></p>
       <div class="legend">
         <span class="lg"><span class="sw dot" style="background:var(--s1)"></span>1월</span>
         <span class="lg"><span class="sw dot" style="background:var(--s2)"></span>2월</span>
         <span class="lg"><span class="sw dot" style="background:var(--s3)"></span>3월</span>
         <span class="lg" style="color:var(--muted)">점 하나 = 하루 (86일)</span>
       </div>
-      <div id="c4"></div>
+            <div id="c4"></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="lab">전체 (주중)</div><div class="val" style="color:var(--s1)">r = +0.29</div><div class="sub">p = 0.021 · 유의해 보임</div></div>
@@ -641,12 +639,13 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
       </p>
     </div>
     <div class="figbox">
+      <p class="takeaway">Grove St PATH 한 곳이 <em>+642대</em> — 2위의 <em>6.9배</em>를 혼자 빨아들인다.<span>막대 길이 = 도착 − 출발. 오른쪽이 쌓이는 곳, 왼쪽이 마르는 곳.</span></p>
       <div class="legend">
         <span class="lg"><span class="sw" style="background:var(--s1)"></span>순유입 (자전거가 쌓임)</span>
         <span class="lg"><span class="sw" style="background:var(--neg)"></span>순유출 (자전거가 마름)</span>
         <span class="lg" style="color:var(--muted)">총 통행 600건 이상 정류장 23곳</span>
       </div>
-      <div id="c5"></div>
+            <div id="c5"></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="lab">Grove St PATH 순유입</div><div class="val" style="color:var(--s1)">+642대</div><div class="sub">도착 2,735 − 출발 2,093</div></div>
@@ -673,7 +672,8 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
         2단계에서 확인한 Birth Year 상수 문제가 여기서 결과를 만들어낸다.
       </p>
     </div>
-    <div class="figbox"><div id="c6"></div></div>
+    <div class="figbox"><p class="takeaway">일회권의 <em>99.4%</em>가 같은 출생연도다 — 실제 나이가 아니라 기본값이다.<span>막대 길이 = 그 그룹에서 가장 흔한 출생연도 하나가 차지하는 비율.</span></p>
+      <div id="c6"></div></div>
     <div class="stats">
       <div class="stat"><div class="lab">일회권 Birth Year = 1986</div><div class="val" style="color:var(--warn)">315 / 317</div><div class="sub">99.4%</div></div>
       <div class="stat"><div class="lab">구독자 최빈 연도 비중</div><div class="val">8.0%</div><div class="sub">1986년 · 정상 분포</div></div>
@@ -725,7 +725,8 @@ footer code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace; color:va
   <div class="routebox">
     <h4>재배치 루트 설계 (A1)</h4>
     <p>주중 하루 순증감을 대수로 환산한 값. 회수 1곳, 배분 5곳이면 시스템 불균형의 대부분이 상쇄된다.</p>
-    <div id="c7"></div>
+    <p class="takeaway">한 곳에서 걷어 다섯 곳에 뿌리면, 하루 <em>10대</em>로 불균형이 상쇄된다.<span>선 굵기 = 하루 이동해야 할 자전거 수.</span></p>
+      <div id="c7"></div>
   </div>
 
   <div class="acts">
@@ -871,9 +872,16 @@ function table(id,head,rows,cls){
 
 /* ============ generic grouped column chart ============ */
 function grouped(mount,cats,series,opts){
-  const W=720,H=opts.h||300,ML=40,MR=8,MT=14,MB=opts.mb||40;
+  const W=720,H=opts.h||300,ML=40,MR=8,MT=opts.mt||14,MB=opts.mb||40;
   const pw=W-ML-MR, ph=H-MT-MB, max=opts.max;
   const s=svg(W,H); s.setAttribute("aria-label",opts.label);
+  const band0=pw/cats.length;
+  /* 배경 밴드 (주말 등) */
+  (opts.bands||[]).forEach(b=>{
+    s.appendChild(el("rect",{x:ML+band0*b.from,y:MT,width:band0*(b.to-b.from+1),height:ph,
+      fill:"var(--sunk)"}));
+    s.appendChild(txt(ML+band0*(b.from+(b.to-b.from+1)/2),MT-5,b.label,"tick"));
+  });
   opts.ticks.forEach(v=>{const y=MT+ph-v/max*ph;
     s.appendChild(el("line",{x1:ML,x2:W-MR,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
     s.appendChild(txt(ML-9,y+4,opts.fmtTick(v),"tick tn","end"));});
@@ -884,6 +892,10 @@ function grouped(mount,cats,series,opts){
     series.forEach((se,j)=>{
       const v=se.data[i], hgt=Math.max(2,v/max*ph), x=start+j*(bw+gap), y=MT+ph-hgt;
       s.appendChild(el("rect",{x:x,y:y,width:bw,height:hgt,rx:4,fill:"var(--"+se.color+")",class:"mark","data-t":"g"+i}));
+      /* 각 시리즈의 최댓값에 직접 라벨 */
+      if(opts.peak && v===Math.max.apply(null,se.data)){
+        s.appendChild(txt(x+bw/2,y-8,opts.peak(se,v),"vlab",null,{fill:"var(--"+se.color+")","font-weight":"700"}));
+      }
     });
     s.appendChild(el("rect",{x:ML+band*i,y:MT,width:band,height:ph,class:"hit","data-t":"g"+i}));
     bind(s.lastChild,"<b>"+c+"</b><br>"+series.map(q=>q.name+" "+opts.fmtTip(q.data[i],i,q)).join("<br>"),s);
@@ -963,7 +975,6 @@ table("tvar",["변수","측정 척도","고유값","비고"],[
     s.appendChild(el("rect",{x:ML+band*i,y:MT,width:band,height:ph,class:"hit","data-t":"w"+i}));
     bind(s.lastChild,"<b>"+t.n+"</b><br>잔존 "+nf(t.v)+"행"+(t.d?"<br>제거 "+nf(-t.d)+"행":"")+"<br>"+t.note,s);
   });
-  s.appendChild(txt(ML,16,"단계별 잔존 행수","tick","start"));
   put(document.getElementById("c8"),s);
   cap(document.getElementById("c8"),"마지막 막대(<b>RAW 시트</b>)는 근거가 문서와 맞지 않아 이 보고서에서 사용하지 않았다.");
 })();
@@ -998,12 +1009,12 @@ table("tseg",["세그먼트","건수","비중","중앙 이용시간","P90","주�
     name:d[0], v:d[1], lab:d[1].toFixed(1)+"%",
     color:d[4]?"var(--s2)":"var(--axis)",
     tip:"<b>"+d[0]+"</b><br>출발 "+nf(d[2])+"건 중 제자리 반납 "+d[3]+"건<br>= "+d[1].toFixed(1)+"% (전체 평균 2.8%)"
-  })),{max:19, ticks:[0,5,10,15], rh:27, lw:150, mr:70,
+  })),{max:19, ticks:[0,5,10,15], rh:27, lw:150, mr:70, mb:34,
       fmtTick:v=>v+"%", label:"정류장별 제자리 반납률"});
   /* 전체 평균 기준선 */
-  const ML=150,pw=720-ML-70, x=ML+2.8/19*pw;
-  s.appendChild(el("line",{x1:x,x2:x,y1:18,y2:24+8*27,stroke:"var(--ink)","stroke-width":1.5,"stroke-dasharray":"5 3"}));
-  s.appendChild(txt(x+6,16,"전체 평균 2.8%","tick","start",{fill:"var(--ink)"}));
+  const ML=150,pw=720-ML-70, x=ML+2.8/19*pw, yEnd=24+8*27+10;
+  s.appendChild(el("line",{x1:x,x2:x,y1:18,y2:yEnd,stroke:"var(--ink)","stroke-width":1.5,"stroke-dasharray":"5 3"}));
+  s.appendChild(txt(x+7,yEnd+3,"전체 평균 2.8%","tick","start",{fill:"var(--ink)","font-weight":"700"}));
   cap(document.getElementById("c10"),"출발 100건 이상 정류장만. 주황색 4곳은 모두 공원·수변 입지 — 위치가 이용 목적을 결정한다.");
 })();
 
@@ -1025,9 +1036,9 @@ table("todd",["구분","항목","값","전체 대비"],[
   const cats=["≤3","4–5","6–10","11–15","16–20","21–30","31–60","60+"];
   const n=[3640,5311,4922,1514,611,411,287,90];
   const pct=[21.68,31.64,29.32,9.02,3.64,2.45,1.71,0.54];
-  const W=720,H=300,ML=44,MR=10,MT=18,MB=48, pw=W-ML-MR, ph=H-MT-MB, max=35;
+  const W=720,H=328,ML=44,MR=10,MT=46,MB=48, pw=W-ML-MR, ph=H-MT-MB, max=41;
   const s=svg(W,H); s.setAttribute("aria-label","이용시간 구간별 분포");
-  [0,10,20,30].forEach(v=>{const y=MT+ph-v/max*ph;
+  [0,10,20,30,40].forEach(v=>{const y=MT+ph-v/max*ph;
     s.appendChild(el("line",{x1:ML,x2:W-MR,y1:y,y2:y,class:v===0?"baseline":"gridline"}));
     s.appendChild(txt(ML-9,y+4,v+"%","tick tn","end"));});
   const band=pw/cats.length, bw=Math.min(58,band-12);
@@ -1051,6 +1062,11 @@ table("todd",["구분","항목","값","전체 대비"],[
     s.appendChild(txt(x+(k?6:-6),MT+13+k*16,m[1],"tick",k?"start":"end",{fill:m[2]}));
   });
   s.appendChild(txt(ML+pw/2,H-MB+38,"이용시간 (분)","tick"));
+  /* 10분 이내 구간 브래킷 */
+  const bx0=ML+3, bx1=ML+band*3-3;
+  s.appendChild(el("path",{d:"M"+bx0+",44 L"+bx0+",36 L"+bx1+",36 L"+bx1+",44",
+    fill:"none",stroke:"var(--s1)","stroke-width":1.5}));
+  s.appendChild(txt((bx0+bx1)/2,29,"10분 이내 82.6%","vlab",null,{fill:"var(--s1)","font-weight":"700"}));
   put(document.getElementById("c11"),s);
   cap(document.getElementById("c11"),"진한 막대 = 10분 이내(82.6%). 평균선이 분포의 오른쪽 꼬리 쪽으로 끌려가 있는 것이 <b>왜도 33.7</b>의 모습이다.");
 })();
@@ -1085,7 +1101,6 @@ table("todd",["구분","항목","값","전체 대비"],[
     s.appendChild(txt(p[0]+10,p[1]-8,"상위 "+m[0]+"곳 "+m[1]+"%","vlab","start",{fill:"var(--ink)"}));
   });
   s.appendChild(txt(ML,MT-4,"출발 건수","tick","start"));
-  s.appendChild(txt(W-MR+8,MT-4,"누적","tick","start",{fill:"var(--s2)"}));
   s.appendChild(txt(ML+pw/2,H-MB+24,"정류장 50곳 (출발 건수 내림차순)","tick"));
   put(document.getElementById("c12"),s);
   cap(document.getElementById("c12"),"진한 막대 = 상위 10곳. 주황 선은 누적 점유율(오른쪽 축).");
@@ -1112,7 +1127,9 @@ const D1={cats:["월","화","수","목","금","토","일"],
   subN:[2466,2426,3252,2924,2414,1487,1500], otN:[52,24,39,19,26,93,64]};
 grouped(document.getElementById("c1"),D1.cats,
   [{name:"구독자",color:"s1",data:D1.sub},{name:"일회권",color:"s2",data:D1.ot}],
-  {max:30,ticks:[0,10,20,30],h:300,bw:24,label:"요일별 사용자 유형 비중",
+  {max:32,ticks:[0,10,20,30],h:310,mt:26,bw:24,label:"요일별 사용자 유형 비중",
+   bands:[{from:5,to:6,label:"주말"}],
+   peak:se=>se.name+" 최다",
    fmtTick:v=>v+"%",
    fmtTip:(v,i,q)=>v.toFixed(1)+"% ("+nf(q.name==="구독자"?D1.subN[i]:D1.otN[i])+"건)"});
 
@@ -1121,9 +1138,19 @@ const D2={cats:["1–5","6–10","11–15","16–20","21–30","31–45","46–6
   ot:[10.09,15.77,14.51,11.36,22.40,8.52,3.47,13.88]};
 grouped(document.getElementById("c2"),D2.cats,
   [{name:"구독자",color:"s1",data:D2.sub},{name:"일회권",color:"s2",data:D2.ot}],
-  {max:60,ticks:[0,20,40,60],h:300,bw:22,mb:46,label:"이용시간 구간별 분포",
+  {max:62,ticks:[0,20,40,60],h:310,mt:24,bw:22,mb:46,label:"이용시간 구간별 분포",
+   peak:se=>se.name==="구독자"?"":"두 번째 봉우리",
    fmtTick:v=>v+"%", fmtTip:v=>v.toFixed(1)+"%"});
-document.querySelector("#c2 svg").appendChild(txt(360,296,"이용시간 (분)","tick"));
+(function(){
+  const s=document.querySelector("#c2 svg");
+  s.appendChild(txt(360,306,"이용시간 (분)","tick"));
+  /* 16분 이상 구간을 브래킷으로 묶어 두 그룹의 누적 비중 대비 */
+  const ML=40,MR=8,pw=720-ML-MR,band=pw/8, x0=ML+band*3+3, x1=ML+band*8-3;
+  s.appendChild(el("path",{d:"M"+x0+",160 L"+x0+",152 L"+x1+",152 L"+x1+",160",
+    fill:"none",stroke:"var(--s2)","stroke-width":1.5}));
+  s.appendChild(txt((x0+x1)/2,144,"16분 이상 — 일회권 59.6% vs 구독자 7.4%","tick",null,
+    {fill:"var(--s2)","font-weight":"700"}));
+})();
 
 (function(){
   const cats=["18–24","25–34","35–44","45–54","55–64","65–74","75+"];
@@ -1151,6 +1178,25 @@ document.querySelector("#c2 svg").appendChild(txt(360,296,"이용시간 (분)","
   }
   panel(0,"대여 건수",cnt,8000,[0,4000,8000],v=>v?(v/1000)+"k":"0","var(--s1)");
   panel(pwid+PAD,"중앙 이용시간 (분)",med,12,[0,4,8,12],v=>String(v),"var(--seq4)");
+  /* 왼쪽: 최다 연령대 직접 라벨 */
+  (function(){
+    const pw=pwid-ML-MR, ph=H-MT-MB, band=pw/cats.length, cx=ML+band*2.5;
+    const y=MT+ph-7696/8000*ph;
+    s.appendChild(txt(cx+6,y-8,"35–44세 45.8%","vlab","start",{fill:"var(--s1)","font-weight":"700"}));
+    s.appendChild(txt(ML+pw/2,MT+ph+40,"뾰족하다 — 나이가 횟수를 가른다","tick",null,
+      {fill:"var(--ink2)","font-weight":"700"}));
+  })();
+  /* 오른쪽: 전체 중앙값 5분 기준선 + 평평함 강조 */
+  (function(){
+    const x0=pwid+PAD, pw=pwid-ML-MR, ph=H-MT-MB, y=MT+ph-5/12*ph;
+    s.appendChild(el("line",{x1:x0+ML,x2:x0+ML+pw,y1:y,y2:y,
+      stroke:"var(--ink)","stroke-width":1.5,"stroke-dasharray":"5 3"}));
+    s.appendChild(txt(x0+ML+pw,y-7,"전체 중앙값 5분","tick","end",{fill:"var(--ink)"}));
+    s.appendChild(el("path",{d:"M"+(x0+ML+38)+","+(MT+ph-6/12*ph)+" L"+(x0+ML+pw-30)+","+(MT+ph-6/12*ph),
+      fill:"none",stroke:"var(--s2)","stroke-width":2,"stroke-dasharray":"1 5","stroke-linecap":"round"}));
+    s.appendChild(txt(x0+ML+pw/2,MT+ph+40,"평평하다 — 나이는 시간을 못 가른다","tick",null,
+      {fill:"var(--s2)","font-weight":"700"}));
+  })();
   put(document.getElementById("c3"),s);
   cap(document.getElementById("c3"),"회색 막대 = 표본 100건 미만(18–24세 54건, 75+ 1건) — 값은 있지만 해석하면 안 되는 구간.");
 })();
@@ -1168,6 +1214,16 @@ document.querySelector("#c2 svg").appendChild(txt(360,296,"이용시간 (분)","
   s.appendChild(txt(ML+pw/2,H-MB+38,"일평균 기온 (°C)","tick"));
   s.appendChild(txt(ML-9,MT-4,"건/일","tick","end"));
   const col={1:"var(--s1)",2:"var(--s2)",3:"var(--s3)"};
+  /* 월별 평균 밴드 — 점 구름이 세로로 층져 있다는 것을 눈에 보이게 */
+  [1,2,3].forEach(m=>{
+    const d=DAILY.filter(r=>r[2]===m);
+    const mean=d.reduce((a,r)=>a+r[1],0)/d.length;
+    const y=Y(mean);
+    s.appendChild(el("line",{x1:ML+6,x2:W-MR-96,y1:y,y2:y,stroke:col[m],"stroke-width":2,
+      "stroke-dasharray":"7 4","stroke-opacity":.9}));
+    s.appendChild(txt(W-MR-90,y+4,m+"월 평균 "+Math.round(mean),"vlab","start",
+      {fill:col[m],"font-weight":"700"}));
+  });
   const seen={};
   DAILY.forEach(d=>{
     const k=d[0]+"_"+Math.round(d[1]/12); seen[k]=(seen[k]||0)+1;
@@ -1204,6 +1260,11 @@ const FLOW=[["Grove St PATH",642,2735,2093],["City Hall",93,665,572],["Essex Lig
     s.appendChild(h);
     bind(h,"<b>"+f[0]+"</b><br>도착 "+nf(f[2])+" − 출발 "+nf(f[3])+"<br>순증감 <b>"+(v>=0?"+":"")+nf(v)+"대</b>",s);
   });
+  /* 1위와 2위 사이의 격차를 눈에 보이게 */
+  const y1=MT+0*rh+rh/2, y2=MT+1*rh+rh/2, xg=Z+93/span*pw+64;
+  s.appendChild(el("path",{d:"M"+xg+","+y1+" L"+(xg+10)+","+y1+" L"+(xg+10)+","+y2+" L"+xg+","+y2,
+    fill:"none",stroke:"var(--s1)","stroke-width":1.5}));
+  s.appendChild(txt(xg+16,(y1+y2)/2+4,"2위의 6.9배","vlab","start",{fill:"var(--s1)","font-weight":"700"}));
   put(document.getElementById("c5"),s);
 })();
 
